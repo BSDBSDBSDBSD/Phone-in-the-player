@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">דיבורית</string>
+
+    <string name="tab_dialer">חייגן</string>
+    <string name="tab_contacts">אנשי קשר</string>
+    <string name="tab_recents">אחרונות</string>
+
+    <string name="status_connected">מחובר ל-%1$s</string>
+    <string name="status_not_connected">אין טלפון מחובר</string>
+    <string name="status_connecting">מתחבר…</string>
+    <string name="status_bt_off">הבלוטות\' כבוי</string>
+    <string name="status_not_ready">הנגן עוד לא מוכן לשיחות. לחץ לבדיקת מערכת.</string>
+    <string name="status_details">קליטה %1$s · סוללה %2$s</string>
+    <string name="choose_phone">בחר טלפון</string>
+    <string name="choose_phone_title">לאיזה טלפון להתחבר?</string>
+    <string name="no_paired">אין טלפונים מצומדים. צמד קודם את הטלפון בהגדרות הבלוטות\'.</string>
+    <string name="open_bt_settings">הגדרות בלוטות\'</string>
+    <string name="connecting_to">מתחבר ל-%1$s…</string>
+    <string name="connect_failed">החיבור לא הצליח. ודא שהבלוטות\' בטלפון דלוק.</string>
+    <string name="menu_resync">רענן אנשי קשר מהטלפון</string>
+    <string name="menu_diagnostics">בדיקת מערכת</string>
+    <string name="resync_started">מבקש מהטלפון את אנשי הקשר. ייתכן שהטלפון ישאל אם לאשר.</string>
+
+    <string name="dial_hint">הקש מספר</string>
+    <string name="call">חייג</string>
+    <string name="delete">מחק</string>
+    <string name="no_phone_to_call">אין טלפון מחובר. בחר טלפון למעלה.</string>
+    <string name="dial_failed">החיוג לא הצליח</string>
+
+    <string name="search_contacts">חיפוש איש קשר</string>
+    <string name="no_contacts">אין אנשי קשר עדיין. אנשי הקשר מגיעים מהטלפון אחרי החיבור.\nאפשר לבקש שוב מהתפריט: \"רענן אנשי קשר מהטלפון\".</string>
+    <string name="no_recents">אין שיחות אחרונות.</string>
+    <string name="choose_number">לאיזה מספר?</string>
+    <string name="recent_in">נכנסת</string>
+    <string name="recent_out">יוצאת</string>
+    <string name="recent_missed">לא נענתה</string>
+
+    <string name="incoming_call">שיחה נכנסת</string>
+    <string name="waiting_call">שיחה ממתינה</string>
+    <string name="dialing">מחייג…</string>
+    <string name="ringing_out">מצלצל…</string>
+    <string name="on_hold">בהמתנה</string>
+    <string name="unknown_number">מספר חסוי</string>
+    <string name="answer">ענה</string>
+    <string name="reject">דחה</string>
+    <string name="hang_up">נתק</string>
+    <string name="keypad">מקשים</string>
+    <string name="mute">השתק</string>
+    <string name="unmute">בטל השתקה</string>
+    <string name="sound_on_player">הקול בנגן</string>
+    <string name="sound_on_phone">הקול בטלפון</string>
+    <string name="volume_up">חזק יותר</string>
+    <string name="volume_down">חלש יותר</string>
+    <string name="call_ended">השיחה הסתיימה</string>
+
+    <string name="notif_connected">מחובר ל-%1$s</string>
+    <string name="notif_not_connected">ממתין לטלפון</string>
+    <string name="notif_in_call">בשיחה</string>
+    <string name="channel_link">חיבור לטלפון</string>
+    <string name="channel_calls">שיחות נכנסות</string>
+
+    <string name="permissions_needed">כדי להציג אנשי קשר ולקבל שיחות צריך לאשר את ההרשאות.</string>
+
+    <string name="diag_title">בדיקת מערכת</string>
+    <string name="diag_intro">כאן רואים אם הנגן מוכן לשמש כדיבורית. אם משהו מסומן באדום, ההסבר שמתחתיו אומר מה לעשות.</string>
+    <string name="diag_enable_now">הפעל עכשיו עם Root (עד ההפעלה מחדש)</string>
+    <string name="diag_copy">העתק דוח</string>
+    <string name="diag_copied">הדוח הועתק</string>
+    <string name="diag_refresh">בדוק שוב</string>
+    <string name="diag_working">עובד…</string>
+</resources>

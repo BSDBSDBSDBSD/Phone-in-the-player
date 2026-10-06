@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@+id/tab_dialer" android:icon="@drawable/ic_call" android:title="@string/tab_dialer" />
+    <item android:id="@+id/tab_contacts" android:icon="@drawable/ic_person" android:title="@string/tab_contacts" />
+    <item android:id="@+id/tab_recents" android:icon="@drawable/ic_history" android:title="@string/tab_recents" />
+</menu>

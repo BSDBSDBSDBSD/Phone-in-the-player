@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:paddingHorizontal="16dp"
+    android:paddingBottom="8dp">
+
+    <TextView
+        android:id="@+id/number"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:ellipsize="start"
+        android:gravity="center"
+        android:hint="@string/dial_hint"
+        android:singleLine="true"
+        android:textDirection="ltr"
+        android:textSize="34sp" />
+
+    <TextView
+        android:id="@+id/matchName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:minHeight="24dp"
+        android:textAppearance="?attr/textAppearanceBodyLarge"
+        android:textColor="?attr/colorPrimary" />
+
+    <GridLayout
+        android:id="@+id/keys"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:columnCount="3"
+        android:layoutDirection="ltr"
+        android:rowCount="4">
+
+        <Button style="@style/DialKey" android:text="1" />
+        <Button style="@style/DialKey" android:text="2" />
+        <Button style="@style/DialKey" android:text="3" />
+        <Button style="@style/DialKey" android:text="4" />
+        <Button style="@style/DialKey" android:text="5" />
+        <Button style="@style/DialKey" android:text="6" />
+        <Button style="@style/DialKey" android:text="7" />
+        <Button style="@style/DialKey" android:text="8" />
+        <Button style="@style/DialKey" android:text="9" />
+        <Button style="@style/DialKey" android:text="*" />
+        <Button style="@style/DialKey" android:text="0" />
+        <Button style="@style/DialKey" android:text="#" />
+    </GridLayout>
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:layoutDirection="ltr">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/callButton"
+            style="@style/RoundAction"
+            android:layout_gravity="center"
+            android:backgroundTint="@color/call_green"
+            android:contentDescription="@string/call"
+            app:icon="@drawable/ic_call"
+            app:iconTint="@android:color/white" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/backspace"
+            style="@style/Widget.Material3.Button.IconButton"
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:layout_gravity="center_vertical|end"
+            android:contentDescription="@string/delete"
+            app:icon="@drawable/ic_backspace"
+            app:iconSize="28dp"
+            app:iconTint="?attr/colorOnSurfaceVariant" />
+    </FrameLayout>
+</LinearLayout>

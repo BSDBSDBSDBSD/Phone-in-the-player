@@ -1,0 +1,4 @@
+# The player acts as the hands-free side (like a car): calls, phonebook and messages from the phone.
+bluetooth.profile.hfp.hf.enabled=true
+bluetooth.profile.pbap.client.enabled=true
+bluetooth.profile.map.client.enabled=true
