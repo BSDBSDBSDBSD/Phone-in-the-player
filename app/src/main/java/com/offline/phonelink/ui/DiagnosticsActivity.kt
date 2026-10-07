@@ -15,6 +15,8 @@ import com.offline.phonelink.R
 import com.offline.phonelink.bt.HfpClient
 import com.offline.phonelink.bt.LinkService
 import com.offline.phonelink.bt.SystemCheck
+import com.offline.phonelink.bt.SystemInstaller
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.offline.phonelink.data.PhoneBook
 import com.offline.phonelink.databinding.ActivityDiagnosticsBinding
 import kotlinx.coroutines.Dispatchers
@@ -41,12 +43,25 @@ class DiagnosticsActivity : AppCompatActivity() {
             Toast.makeText(this, R.string.diag_copied, Toast.LENGTH_SHORT).show()
         }
         b.enableNow.setOnClickListener { enableNow() }
+        b.installSystem.setOnClickListener {
+            confirm(R.string.install_system_confirm, R.string.install_system_go) {
+                runInstaller(R.string.install_done) { SystemInstaller.install(this) }
+            }
+        }
+        b.uninstallSystem.setOnClickListener {
+            confirm(R.string.uninstall_confirm, R.string.uninstall_go) {
+                runInstaller(R.string.uninstall_done) { SystemInstaller.uninstall(this) }
+            }
+        }
         runChecks()
     }
 
     private fun runChecks() {
         lifecycleScope.launch {
             val checks = withContext(Dispatchers.IO) { collect() }
+            val system = SystemCheck.isSystemApp(this@DiagnosticsActivity)
+            b.installSystem.visibility = if (system) View.GONE else View.VISIBLE
+            b.uninstallSystem.visibility = if (system) View.VISIBLE else View.GONE
             b.checks.removeAllViews()
             for (c in checks) addRow(c)
             report = buildString {
@@ -72,7 +87,7 @@ class DiagnosticsActivity : AppCompatActivity() {
         list += Check(
             system && privileged, "מותקנת כאפליקציית מערכת עם הרשאת בלוטות' מיוחדת",
             when {
-                !system -> "צריך להתקין את מודול ה-Magisk (PhoneLink-magisk.zip) ולהפעיל מחדש את הנגן. התקנה רגילה של ה-APK לא מספיקה."
+                !system -> "לחץ למטה על \"התקן כאפליקציית מערכת\" (אם אפשר לכתוב למחיצת המערכת), או התקן את מודול ה-Magisk (PhoneLink-magisk.zip). אחר כך מפעילים מחדש את הנגן."
                 !privileged -> "האפליקציה במערכת אבל בלי ההרשאה. ודא שהמודול מותקן במלואו והפעל מחדש."
                 else -> null
             },
@@ -140,6 +155,48 @@ class DiagnosticsActivity : AppCompatActivity() {
             b.enableNow.isEnabled = true
             b.enableNow.setText(R.string.diag_enable_now)
             runChecks()
+        }
+    }
+
+    private fun confirm(message: Int, action: Int, onYes: () -> Unit) {
+        MaterialAlertDialogBuilder(this)
+            .setMessage(message)
+            .setPositiveButton(action) { _, _ -> onYes() }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
+    }
+
+    /** Runs the system install / removal and explains the outcome; offers a restart when it worked. */
+    private fun runInstaller(doneMessage: Int, work: () -> SystemCheck.ShellResult) {
+        b.installSystem.isEnabled = false
+        b.uninstallSystem.isEnabled = false
+        lifecycleScope.launch {
+            val result = withContext(Dispatchers.IO) {
+                if (!SystemCheck.hasRoot()) null else work()
+            }
+            b.installSystem.isEnabled = true
+            b.uninstallSystem.isEnabled = true
+            if (result != null) {
+                b.shellOutput.visibility = View.VISIBLE
+                b.shellOutput.text = "exit ${result.code}\n${result.output}"
+            }
+            val message = when (result?.code) {
+                null -> R.string.no_root
+                0 -> doneMessage
+                SystemInstaller.EXIT_NOT_WRITABLE -> R.string.system_read_only
+                SystemInstaller.EXIT_MAGISK_MODULE -> R.string.installed_by_magisk
+                SystemInstaller.EXIT_NOT_INSTALLED -> R.string.not_installed_in_system
+                else -> R.string.install_failed
+            }
+            val dialog = MaterialAlertDialogBuilder(this@DiagnosticsActivity).setMessage(message)
+            if (result?.ok == true) {
+                dialog.setPositiveButton(R.string.reboot_now) { _, _ ->
+                    lifecycleScope.launch(Dispatchers.IO) { SystemInstaller.reboot() }
+                }.setNegativeButton(R.string.later, null)
+            } else {
+                dialog.setPositiveButton(android.R.string.ok, null)
+            }
+            dialog.show()
         }
     }
 

@@ -38,11 +38,28 @@
                 android:orientation="vertical" />
 
             <com.google.android.material.button.MaterialButton
-                android:id="@+id/enableNow"
+                android:id="@+id/installSystem"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
+                android:text="@string/install_system"
+                android:visibility="gone" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/enableNow"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
                 android:text="@string/diag_enable_now" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/uninstallSystem"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/uninstall_system"
+                android:visibility="gone" />
 
             <LinearLayout
                 android:layout_width="match_parent"

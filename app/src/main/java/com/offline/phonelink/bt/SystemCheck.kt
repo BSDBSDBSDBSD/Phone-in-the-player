@@ -27,17 +27,20 @@ object SystemCheck {
     fun hasPrivilegedBluetooth(context: Context): Boolean =
         context.checkSelfPermission(Manifest.permission.BLUETOOTH_PRIVILEGED) == PackageManager.PERMISSION_GRANTED
 
-    class ShellResult(val ok: Boolean, val output: String)
+    /** [code] is the exit code (-1 when su could not run or timed out). */
+    class ShellResult(val code: Int, val output: String) {
+        val ok get() = code == 0
+    }
 
     /** Runs [command] as root (via su). Blocks: call it off the main thread. */
     fun root(command: String, timeoutSec: Long = 20): ShellResult = try {
         val p = ProcessBuilder("su", "-c", command).redirectErrorStream(true).start()
         val finished = p.waitFor(timeoutSec, TimeUnit.SECONDS)
+        if (!finished) p.destroyForcibly()
         val out = p.inputStream.bufferedReader().readText().trim()
-        if (!finished) p.destroy()
-        ShellResult(finished && p.exitValue() == 0, out)
+        ShellResult(if (finished) p.exitValue() else -1, out)
     } catch (t: Throwable) {
-        ShellResult(false, t.message ?: t.javaClass.simpleName)
+        ShellResult(-1, t.message ?: t.javaClass.simpleName)
     }
 
     fun hasRoot(): Boolean = root("id", 10).let { it.ok && it.output.contains("uid=0") }

@@ -31,6 +31,16 @@ jobs:
           chmod +x gradlew
           ./gradlew --no-daemon --stacktrace testDebugUnitTest packageMagiskModule
 
+      - name: Collect files
+        run: cp "$(ls app/build/outputs/apk/release/*.apk | head -n 1)" app/build/outputs/magisk/PhoneLink.apk
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: PhoneLink-apk
+          path: app/build/outputs/magisk/PhoneLink.apk
+          if-no-files-found: error
+
       - name: Upload Magisk module
         uses: actions/upload-artifact@v4
         with:
@@ -53,6 +63,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release delete latest -y --cleanup-tag -R "$GITHUB_REPOSITORY" || true
-          gh release create latest app/build/outputs/magisk/PhoneLink-magisk.zip -R "$GITHUB_REPOSITORY" \
+          gh release create latest app/build/outputs/magisk/PhoneLink-magisk.zip app/build/outputs/magisk/PhoneLink.apk -R "$GITHUB_REPOSITORY" \
             --target "$GITHUB_SHA" --latest --title "PhoneLink – latest" \
-            --notes "Built from ${GITHUB_SHA::7}. Install PhoneLink-magisk.zip in Magisk (Modules → Install from storage), then restart the player."
+            --notes "Built from ${GITHUB_SHA::7}. Either install PhoneLink-magisk.zip in Magisk (Modules → Install from storage), or install PhoneLink.apk and press 'Install as system app' in its System check screen (needs a writable /system). Then restart the player."

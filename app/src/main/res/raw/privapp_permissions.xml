@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Privileged permissions granted to PhoneLink (must list every privileged permission the app asks for). -->
+<permissions>
+    <privapp-permissions package="com.offline.phonelink">
+        <permission name="android.permission.BLUETOOTH_PRIVILEGED" />
+        <permission name="android.permission.START_ACTIVITIES_FROM_BACKGROUND" />
+    </privapp-permissions>
+</permissions>
