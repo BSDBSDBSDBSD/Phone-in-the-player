@@ -196,10 +196,16 @@ class DiagnosticsActivity : AppCompatActivity() {
             MaterialAlertDialogBuilder(this@DiagnosticsActivity)
                 .setMessage(R.string.collect_log_done)
                 .setPositiveButton(R.string.share) { _, _ ->
+                    // The log is too big to pass as text (that crashed the app): share it as a file.
+                    val named = java.io.File(cacheDir, "PhoneLink-log.txt")
+                    log.file.copyTo(named, overwrite = true)
+                    val uri = androidx.core.content.FileProvider.getUriForFile(this@DiagnosticsActivity, "com.offline.phonelink.files", named)
                     val send = Intent(Intent.ACTION_SEND)
                         .setType("text/plain")
                         .putExtra(Intent.EXTRA_SUBJECT, "PhoneLink-log")
-                        .putExtra(Intent.EXTRA_TEXT, report + "\n" + log.text.takeLast(400_000))
+                        .putExtra(Intent.EXTRA_TEXT, report)
+                        .putExtra(Intent.EXTRA_STREAM, uri)
+                        .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                     startActivity(Intent.createChooser(send, getString(R.string.share)))
                 }
                 .setNegativeButton(android.R.string.ok, null)

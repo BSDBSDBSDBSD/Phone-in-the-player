@@ -11,7 +11,8 @@ object LogCollector {
 
     const val OUTPUT = "/sdcard/Download/PhoneLink-log.txt"
 
-    class Result(val ok: Boolean, val text: String, val error: String)
+    /** [file] is a copy in the app's cache, for sharing. */
+    class Result(val ok: Boolean, val file: File, val error: String)
 
     fun collect(context: Context): Result {
         // Root writes into a file this app created, so the app can read it back.
@@ -43,7 +44,6 @@ object LogCollector {
         )
         script.setReadable(true, false)
         val result = SystemCheck.root("sh '${script.absolutePath}'", 90)
-        val text = runCatching { copy.readText() }.getOrDefault("")
-        return Result(result.ok && text.isNotEmpty(), text, result.output)
+        return Result(result.ok && copy.length() > 0, copy, result.output)
     }
 }

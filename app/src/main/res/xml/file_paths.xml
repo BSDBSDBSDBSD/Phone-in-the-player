@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The troubleshooting log is shared from the app's cache folder -->
+<paths>
+    <cache-path name="logs" path="." />
+</paths>

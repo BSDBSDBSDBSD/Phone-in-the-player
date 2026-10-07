@@ -77,6 +77,16 @@
             android:exported="false"
             android:label="@string/diag_title" />
 
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="com.offline.phonelink.files"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
         <service
             android:name=".bt.LinkService"
             android:exported="false"

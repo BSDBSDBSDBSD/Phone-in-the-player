@@ -10,7 +10,6 @@ import android.media.AudioRecord
 import android.media.AudioTrack
 import android.media.MediaRecorder
 import android.util.Log
-import java.lang.reflect.Constructor
 import java.util.concurrent.Executors
 
 /**
@@ -73,8 +72,9 @@ class AudioBridge(private val context: Context) {
         log("devices: scoIn=${scoIn?.id} scoOut=${scoOut?.id} mic=${mic?.id} speaker=${speaker?.id}")
 
         threads = listOf(
-            pump("phone→speaker", MediaRecorder.AudioSource.MIC, scoIn, AudioAttributes.USAGE_MEDIA, speaker),
-            pump("mic→phone", MediaRecorder.AudioSource.VOICE_COMMUNICATION, mic, AudioAttributes.USAGE_VOICE_COMMUNICATION, scoOut),
+            // Communication audio is routed to the Bluetooth call headset, so this records the phone's side.
+            pump("phone→speaker", MediaRecorder.AudioSource.VOICE_COMMUNICATION, scoIn, AudioAttributes.USAGE_MEDIA, speaker),
+            pump("mic→phone", MediaRecorder.AudioSource.MIC, mic, AudioAttributes.USAGE_VOICE_COMMUNICATION, scoOut),
         )
         threads.forEach { it.start() }
     }
@@ -158,35 +158,18 @@ class AudioBridge(private val context: Context) {
     }
 
     /**
-     * Tells the audio system that a Bluetooth call headset is (or is no longer) connected, so it opens
-     * the Bluetooth call path. Hidden API: AudioSystem.setDeviceConnectionState.
+     * Tells the audio system that a Bluetooth call headset is (or is no longer) connected and routes
+     * communication audio to it. The audio policy accepts this only from system processes, so it runs
+     * as root in a separate process (see AudioPolicyTool).
      */
     private fun setScoDevices(address: String, available: Boolean) {
-        val state = if (available) 1 else 0
-        for ((role, type, native) in listOf(
-            Triple(ROLE_OUTPUT, AudioDeviceInfo.TYPE_BLUETOOTH_SCO, DEVICE_OUT_BLUETOOTH_SCO),
-            Triple(ROLE_INPUT, AudioDeviceInfo.TYPE_BLUETOOTH_SCO, DEVICE_IN_BLUETOOTH_SCO_HEADSET),
-        )) {
-            val result = runCatching {
-                val system = Class.forName("android.media.AudioSystem")
-                val withAttributes = system.methods.firstOrNull {
-                    it.name == "setDeviceConnectionState" && it.parameterTypes.size == 3 &&
-                        it.parameterTypes[0].name == "android.media.AudioDeviceAttributes"
-                }
-                if (withAttributes != null) {
-                    val cls = Class.forName("android.media.AudioDeviceAttributes")
-                    @Suppress("UNCHECKED_CAST")
-                    val ctor = cls.constructors.first { c ->
-                        c.parameterTypes.contentEquals(arrayOf(Int::class.java, Int::class.java, String::class.java))
-                    } as Constructor<Any>
-                    withAttributes.invoke(null, ctor.newInstance(role, type, address), state, 0)
-                } else {
-                    system.methods.first { it.name == "setDeviceConnectionState" && it.parameterTypes.size == 5 }
-                        .invoke(null, native, state, address, "PhoneLink", 0)
-                }
-            }
-            log("setDeviceConnectionState(role=$role, state=$state) -> ${result.getOrElse { it.cause ?: it }}")
-        }
+        val apk = context.applicationInfo.sourceDir
+        val verb = if (available) "connect" else "disconnect"
+        val result = SystemCheck.root(
+            "CLASSPATH='$apk' app_process /system/bin com.offline.phonelink.root.AudioPolicyTool $verb $address",
+            20,
+        )
+        log("policy $verb: exit ${result.code}: ${result.output.replace("\n", " | ")}")
     }
 
     private fun log(msg: String) = Log.i("PhoneLink", "AudioBridge: $msg")
