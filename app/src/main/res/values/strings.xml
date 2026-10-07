@@ -99,4 +99,8 @@
     <string name="bridge_switch">העברת קול דרך \"דיבורית\" (ניסיוני)</string>
     <string name="collect_system_files">אסוף קבצי מערכת (שמע ובלוטות\')</string>
     <string name="collect_system_files_done">הקבצים נאספו לקובץ אחד בתיקיית ההורדות בשם PhoneLink-system.txt. שום דבר בנגן לא שונה.\n\nאפשר להעביר את הקובץ למחשב ולצרף אותו לשיחה, או לשתף אותו מכאן.</string>
+    <string name="probe_channels">בדיקת ערוצי בלוטות\' (בזמן שיחה)</string>
+    <string name="probe_channels_confirm">הבדיקה מאזינה כ-3 שניות לכל אחד מערוצי הבלוטות\' של השבב ובודקת באיזה מהם יש קול. היא לא משנה שום הגדרה.\n\nלפני הבדיקה:\n1. כבה את \"העברת קול דרך דיבורית\" (המתג כאן).\n2. התחל שיחה, ודאג שהקול בנגן ושהצד השני מדבר כל הזמן.\n3. רק אז לחץ \"התחל\". הבדיקה לוקחת כחצי דקה.</string>
+    <string name="probe_start">התחל</string>
+    <string name="probe_done">הבדיקה הסתיימה. התוצאות נשמרו בתיקיית ההורדות בשם PhoneLink-channels.txt.\n\n%1$s</string>
 </resources>

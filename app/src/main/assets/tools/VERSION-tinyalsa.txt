@@ -1,0 +1,2 @@
+1c5fb68ced57d838f2b7ecd0c00bc1fefc9ab60d
+tinyalsa v2.0.0, built for arm64 (aarch64-linux-android31, static) from https://github.com/tinyalsa/tinyalsa

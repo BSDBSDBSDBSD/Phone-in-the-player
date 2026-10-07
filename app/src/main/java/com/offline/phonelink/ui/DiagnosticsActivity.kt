@@ -16,6 +16,7 @@ import com.offline.phonelink.bt.HfpClient
 import com.offline.phonelink.bt.LinkService
 import com.offline.phonelink.bt.LogCollector
 import com.offline.phonelink.bt.SystemFilesCollector
+import com.offline.phonelink.bt.ChannelProbe
 import com.offline.phonelink.bt.AudioBridge
 import com.offline.phonelink.bt.PhoneAppLink
 import android.content.Intent
@@ -50,6 +51,9 @@ class DiagnosticsActivity : AppCompatActivity() {
         b.enableNow.setOnClickListener { enableNow() }
         b.collectLog.setOnClickListener { collectLog() }
         b.collectSystemFiles.setOnClickListener { collectSystemFiles() }
+        b.probeChannels.setOnClickListener {
+            confirm(R.string.probe_channels_confirm, R.string.probe_start) { probeChannels() }
+        }
         b.phoneAppLink.setOnClickListener { togglePhoneAppLink() }
         b.bridgeSwitch.isChecked = AudioBridge.isEnabled(this)
         b.bridgeSwitch.setOnCheckedChangeListener { _, on -> AudioBridge.setEnabled(this, on) }
@@ -176,6 +180,27 @@ class DiagnosticsActivity : AppCompatActivity() {
             b.enableNow.isEnabled = true
             b.enableNow.setText(R.string.diag_enable_now)
             runChecks()
+        }
+    }
+
+    private fun probeChannels() {
+        b.probeChannels.isEnabled = false
+        b.probeChannels.setText(R.string.diag_working)
+        lifecycleScope.launch {
+            val r = withContext(Dispatchers.IO) { ChannelProbe.run(this@DiagnosticsActivity) }
+            b.probeChannels.isEnabled = true
+            b.probeChannels.setText(R.string.probe_channels)
+            val summary = r.channels.joinToString("\n") { c ->
+                if (c.soundPercent == null) "ערוץ ${c.device}: לא נקלט"
+                else "ערוץ ${c.device}: ${c.soundPercent}% עם קול"
+            }
+            b.shellOutput.visibility = View.VISIBLE
+            b.shellOutput.text = summary + if (r.ok) "" else "\n" + r.error
+            MaterialAlertDialogBuilder(this@DiagnosticsActivity)
+                .setMessage(getString(R.string.probe_done, summary))
+                .setPositiveButton(R.string.share) { _, _ -> shareFile(r.file, "PhoneLink-channels.txt") }
+                .setNegativeButton(android.R.string.ok, null)
+                .show()
         }
     }
 
