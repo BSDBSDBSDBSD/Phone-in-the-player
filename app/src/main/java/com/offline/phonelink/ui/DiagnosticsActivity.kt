@@ -14,6 +14,8 @@ import androidx.lifecycle.lifecycleScope
 import com.offline.phonelink.R
 import com.offline.phonelink.bt.HfpClient
 import com.offline.phonelink.bt.LinkService
+import com.offline.phonelink.bt.LogCollector
+import android.content.Intent
 import com.offline.phonelink.bt.SystemCheck
 import com.offline.phonelink.bt.SystemInstaller
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -43,6 +45,7 @@ class DiagnosticsActivity : AppCompatActivity() {
             Toast.makeText(this, R.string.diag_copied, Toast.LENGTH_SHORT).show()
         }
         b.enableNow.setOnClickListener { enableNow() }
+        b.collectLog.setOnClickListener { collectLog() }
         b.installSystem.setOnClickListener {
             confirm(R.string.install_system_confirm, R.string.install_system_go) {
                 runInstaller(R.string.install_done) { SystemInstaller.install(this) }
@@ -155,6 +158,36 @@ class DiagnosticsActivity : AppCompatActivity() {
             b.enableNow.isEnabled = true
             b.enableNow.setText(R.string.diag_enable_now)
             runChecks()
+        }
+    }
+
+    private fun collectLog() {
+        b.collectLog.isEnabled = false
+        b.collectLog.setText(R.string.diag_working)
+        lifecycleScope.launch {
+            val log = withContext(Dispatchers.IO) { LogCollector.collect(this@DiagnosticsActivity) }
+            b.collectLog.isEnabled = true
+            b.collectLog.setText(R.string.collect_log)
+            if (!log.ok) {
+                b.shellOutput.visibility = View.VISIBLE
+                b.shellOutput.text = log.error
+                MaterialAlertDialogBuilder(this@DiagnosticsActivity)
+                    .setMessage(R.string.collect_log_failed)
+                    .setPositiveButton(android.R.string.ok, null)
+                    .show()
+                return@launch
+            }
+            MaterialAlertDialogBuilder(this@DiagnosticsActivity)
+                .setMessage(R.string.collect_log_done)
+                .setPositiveButton(R.string.share) { _, _ ->
+                    val send = Intent(Intent.ACTION_SEND)
+                        .setType("text/plain")
+                        .putExtra(Intent.EXTRA_SUBJECT, "PhoneLink-log")
+                        .putExtra(Intent.EXTRA_TEXT, report + "\n" + log.text.takeLast(400_000))
+                    startActivity(Intent.createChooser(send, getString(R.string.share)))
+                }
+                .setNegativeButton(android.R.string.ok, null)
+                .show()
         }
     }
 

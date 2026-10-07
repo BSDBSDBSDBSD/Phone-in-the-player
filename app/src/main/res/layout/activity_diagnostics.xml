@@ -54,6 +54,13 @@
                 android:text="@string/diag_enable_now" />
 
             <com.google.android.material.button.MaterialButton
+                android:id="@+id/collectLog"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/collect_log" />
+
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/uninstallSystem"
                 style="@style/Widget.Material3.Button.TextButton"
                 android:layout_width="match_parent"

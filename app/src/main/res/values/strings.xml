@@ -87,4 +87,8 @@
     <string name="uninstall_go">הסר</string>
     <string name="uninstall_done">ההסרה הסתיימה. אחרי הפעלה מחדש הנגן יחזור למצב שהיה לפני ההתקנה.</string>
     <string name="not_installed_in_system">האפליקציה לא מותקנת בתיקיית המערכת.</string>
+    <string name="collect_log">אסוף יומן לבדיקת תקלות</string>
+    <string name="collect_log_done">היומן נשמר בתיקיית ההורדות בשם PhoneLink-log.txt.\n\nאפשר להעביר את הקובץ למחשב ולצרף אותו לשיחה, או לשתף אותו מכאן.</string>
+    <string name="share">שתף</string>
+    <string name="collect_log_failed">איסוף היומן לא הצליח. ודא שאישרת ל\"דיבורית\" גישת Root ב-Magisk.</string>
 </resources>
