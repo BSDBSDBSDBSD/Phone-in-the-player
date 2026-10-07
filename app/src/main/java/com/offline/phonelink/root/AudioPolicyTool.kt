@@ -39,15 +39,23 @@ object AudioPolicyTool {
         }
 
         if (!connect) {
+            step("BT_SCO=off") { setParameters(system, "BT_SCO=off") }
             step("forceUse(communication, none)") { forceUse(system, FOR_COMMUNICATION, FORCE_NONE) }
         }
         step("sco out state=$state") { connectDevice(system, ROLE_OUTPUT, DEVICE_OUT_BLUETOOTH_SCO, address, state) }
         step("sco in state=$state") { connectDevice(system, ROLE_INPUT, DEVICE_IN_BLUETOOTH_SCO_HEADSET, address, state) }
         if (connect) {
             step("forceUse(communication, bt_sco)") { forceUse(system, FOR_COMMUNICATION, FORCE_BT_SCO) }
+            // The same parameters Android's AudioService sends when a Bluetooth headset opens its call
+            // audio; on MediaTek "BT_SCO=on" switches on the Bluetooth call path (BT CVSD).
+            step("bt headset params") { setParameters(system, "bt_headset_name=PhoneLink;bt_headset_nrec=on;bt_wbs=off") }
+            step("BT_SCO=on") { setParameters(system, "BT_SCO=on") }
         }
         System.exit(if (ok) 0 else 1)
     }
+
+    private fun setParameters(system: Class<*>, keyValues: String): Any? =
+        system.methods.first { it.name == "setParameters" && it.parameterTypes.size == 1 }.invoke(null, keyValues)
 
     private fun forceUse(system: Class<*>, usage: Int, config: Int): Any? =
         system.methods.first { it.name == "setForceUse" && it.parameterTypes.size == 2 }.invoke(null, usage, config)

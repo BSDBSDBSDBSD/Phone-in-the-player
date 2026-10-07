@@ -28,7 +28,7 @@ object LogCollector {
             logcat -d -b crash -v time | tail -n 600
             echo
             echo "== log (bluetooth, calls, audio)"
-            logcat -d -b main,system -v time | grep -iE 'bluetooth|bt_|bta_|hfp|headset|hf_client|sco|audio_hw|audiohal|AudioFlinger|AudioPolicy|primary|telecom|incall|dialer|phonelink|AndroidRuntime|FATAL|DEBUG' | tail -n 3000
+            logcat -d -b main,system -v time | grep -iE 'bluetooth|bt_|bta_|hfp|headset|hf_client|sco|cvsd|AudioALSA|APM_|audio_hw|audiohal|AudioFlinger|AudioPolicy|primary|telecom|incall|dialer|phonelink|AndroidRuntime|FATAL|DEBUG' | tail -n 3000
             echo
             echo "== bluetooth state"
             dumpsys bluetooth_manager | grep -iE -A30 'HeadsetClient|HfpClient' | head -n 200

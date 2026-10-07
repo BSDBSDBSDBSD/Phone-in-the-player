@@ -62,7 +62,6 @@ class AudioBridge(private val context: Context) {
         previousMode = audio.mode
         log("start for $phoneAddress (mode was $previousMode)")
         audio.mode = AudioManager.MODE_IN_COMMUNICATION
-        audio.setParameters("BT_SCO=on")
         setScoDevices(phoneAddress, available = true)
 
         val scoIn = waitForDevice(AudioManager.GET_DEVICES_INPUTS, AudioDeviceInfo.TYPE_BLUETOOTH_SCO)
@@ -85,7 +84,6 @@ class AudioBridge(private val context: Context) {
         threads.forEach { runCatching { it.join(1_000) } }
         threads = emptyList()
         address?.let { setScoDevices(it, available = false) }
-        audio.setParameters("BT_SCO=off")
         audio.mode = previousMode
         log("stopped")
     }
