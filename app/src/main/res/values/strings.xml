@@ -97,4 +97,6 @@
     <string name="phone_app_link_on_confirm">השיחות יועברו שוב גם לאפליקציית הטלפון הרגילה. בנגן הזה זה גורם לקריסת השמע בזמן שיחה.\n\nהבלוטות\' יופעל מחדש.</string>
     <string name="phone_app_link_done">בוצע. החיבור לטלפון יתחדש תוך כמה שניות.</string>
     <string name="bridge_switch">העברת קול דרך \"דיבורית\" (ניסיוני)</string>
+    <string name="collect_system_files">אסוף קבצי מערכת (שמע ובלוטות\')</string>
+    <string name="collect_system_files_done">הקבצים נאספו לקובץ אחד בתיקיית ההורדות בשם PhoneLink-system.txt. שום דבר בנגן לא שונה.\n\nאפשר להעביר את הקובץ למחשב ולצרף אותו לשיחה, או לשתף אותו מכאן.</string>
 </resources>

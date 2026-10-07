@@ -15,6 +15,7 @@ import com.offline.phonelink.R
 import com.offline.phonelink.bt.HfpClient
 import com.offline.phonelink.bt.LinkService
 import com.offline.phonelink.bt.LogCollector
+import com.offline.phonelink.bt.SystemFilesCollector
 import com.offline.phonelink.bt.AudioBridge
 import com.offline.phonelink.bt.PhoneAppLink
 import android.content.Intent
@@ -48,6 +49,7 @@ class DiagnosticsActivity : AppCompatActivity() {
         }
         b.enableNow.setOnClickListener { enableNow() }
         b.collectLog.setOnClickListener { collectLog() }
+        b.collectSystemFiles.setOnClickListener { collectSystemFiles() }
         b.phoneAppLink.setOnClickListener { togglePhoneAppLink() }
         b.bridgeSwitch.isChecked = AudioBridge.isEnabled(this)
         b.bridgeSwitch.setOnCheckedChangeListener { _, on -> AudioBridge.setEnabled(this, on) }
@@ -175,6 +177,43 @@ class DiagnosticsActivity : AppCompatActivity() {
             b.enableNow.setText(R.string.diag_enable_now)
             runChecks()
         }
+    }
+
+    private fun collectSystemFiles() {
+        b.collectSystemFiles.isEnabled = false
+        b.collectSystemFiles.setText(R.string.diag_working)
+        lifecycleScope.launch {
+            val r = withContext(Dispatchers.IO) { SystemFilesCollector.collect(this@DiagnosticsActivity) }
+            b.collectSystemFiles.isEnabled = true
+            b.collectSystemFiles.setText(R.string.collect_system_files)
+            if (!r.ok) {
+                b.shellOutput.visibility = View.VISIBLE
+                b.shellOutput.text = r.error
+                MaterialAlertDialogBuilder(this@DiagnosticsActivity)
+                    .setMessage(R.string.collect_log_failed)
+                    .setPositiveButton(android.R.string.ok, null)
+                    .show()
+                return@launch
+            }
+            MaterialAlertDialogBuilder(this@DiagnosticsActivity)
+                .setMessage(R.string.collect_system_files_done)
+                .setPositiveButton(R.string.share) { _, _ -> shareFile(r.file, "PhoneLink-system.txt") }
+                .setNegativeButton(android.R.string.ok, null)
+                .show()
+        }
+    }
+
+    /** Shares a file from the app's cache (too big to pass as text). */
+    private fun shareFile(source: java.io.File, name: String) {
+        val named = java.io.File(cacheDir, name)
+        source.copyTo(named, overwrite = true)
+        val uri = androidx.core.content.FileProvider.getUriForFile(this, "com.offline.phonelink.files", named)
+        val send = Intent(Intent.ACTION_SEND)
+            .setType("text/plain")
+            .putExtra(Intent.EXTRA_SUBJECT, name)
+            .putExtra(Intent.EXTRA_STREAM, uri)
+            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        startActivity(Intent.createChooser(send, getString(R.string.share)))
     }
 
     private fun collectLog() {
