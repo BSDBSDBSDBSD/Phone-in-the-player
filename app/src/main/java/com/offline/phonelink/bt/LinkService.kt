@@ -48,6 +48,8 @@ class LinkService : Service() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private lateinit var client: HfpClient
     private lateinit var bridge: AudioBridge
+    private var bridgeOffSince: Long? = null
+    private var lastAudioOnPlayer = false
     private var ringtone: Ringtone? = null
     private var shownIncomingId: Int? = null
 
@@ -238,12 +240,22 @@ class LinkService : Service() {
             )
         }
 
-        // Carry the call's sound by software when the player cannot (see AudioBridge).
+        // Carry the call's sound by software when the player cannot (see AudioBridge). It stays on for
+        // the whole call: restarting it when the sound moves between phone and player left it silent.
         val talking = s.calls.any { it.isActive || it.isDialing }
-        val bridgeWanted = talking && s.audioOnPlayer && s.phoneAddress != null &&
+        val bridgeWanted = talking && s.phoneAddress != null &&
             AudioBridge.isEnabled(this) && PhoneAppLink.isEnabled(this) == false &&
             checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) == android.content.pm.PackageManager.PERMISSION_GRANTED
-        if (bridgeWanted) bridge.start(s.phoneAddress!!) else bridge.stop()
+        if (bridgeWanted) {
+            bridgeOffSince = null
+            bridge.start(s.phoneAddress!!)
+            if (s.audioOnPlayer && !lastAudioOnPlayer) bridge.audioReturned()
+        } else {
+            // Call states flicker for a moment between calls (hold, waiting): stop only after a pause.
+            val since = bridgeOffSince ?: now.also { bridgeOffSince = it }
+            if (now - since > 3_000) bridge.stop()
+        }
+        lastAudioOnPlayer = s.audioOnPlayer
 
         val ringing = s.ringing
         if (ringing != null && !s.audioOnPlayer && ringing.state == PhoneCall.STATE_INCOMING) startRinging() else stopRinging()

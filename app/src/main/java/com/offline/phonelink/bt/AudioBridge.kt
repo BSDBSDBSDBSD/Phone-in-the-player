@@ -50,6 +50,20 @@ class AudioBridge(private val context: Context) {
         worker.execute { end() }
     }
 
+    /** The phone reopened the call audio after it was moved away: switch the Bluetooth path on again. */
+    fun audioReturned() {
+        if (!wanted) return
+        worker.execute {
+            if (!running) return@execute
+            val apk = context.applicationInfo.sourceDir
+            val r = SystemCheck.root(
+                "CLASSPATH='$apk' app_process /system/bin com.offline.phonelink.root.AudioPolicyTool sco-on ${address ?: ""}",
+                20,
+            )
+            log("audio returned, sco-on: exit ${r.code}: ${r.output.replace("\n", " | ")}")
+        }
+    }
+
     fun release() {
         stop()
         worker.shutdown()
