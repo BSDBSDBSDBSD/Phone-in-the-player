@@ -131,6 +131,13 @@ class AudioBridge(private val context: Context) {
                 .setAudioFormat(AudioFormat.Builder().setSampleRate(rate).setChannelMask(outFormat).setEncoding(encoding).build())
                 .setBufferSizeInBytes(outSize * 2)
                 .setTransferMode(AudioTrack.MODE_STREAM)
+                // Both tracks on the primary output share one device, and while Bluetooth call audio
+                // is on that device is Bluetooth. Media in power-saving mode plays on a separate
+                // (deep buffer) output, which can go to the speaker at the same time.
+                .setPerformanceMode(
+                    if (usage == AudioAttributes.USAGE_MEDIA) AudioTrack.PERFORMANCE_MODE_POWER_SAVING
+                    else AudioTrack.PERFORMANCE_MODE_NONE,
+                )
                 .build()
             if (to != null) track.preferredDevice = to
             record.startRecording()
@@ -139,7 +146,13 @@ class AudioBridge(private val context: Context) {
             val buffer = ShortArray(inSize / 2)
             var loud = 0L
             var frames = 0L
+            var routeLogged = false
+            val started = System.currentTimeMillis()
             while (running) {
+                if (!routeLogged && System.currentTimeMillis() - started > 1_500) {
+                    routeLogged = true
+                    log("$name: after start in=${record.routedDevice?.type}, out=${track.routedDevice?.type}")
+                }
                 val n = record.read(buffer, 0, buffer.size)
                 if (n <= 0) continue
                 track.write(buffer, 0, n)
