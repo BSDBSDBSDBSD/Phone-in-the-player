@@ -86,8 +86,8 @@ class AudioBridge(private val context: Context) {
 
         threads = listOf(
             // Communication audio is routed to the Bluetooth call headset, so this records the phone's side.
-            pump("phone→speaker", MediaRecorder.AudioSource.VOICE_COMMUNICATION, scoIn, AudioAttributes.USAGE_MEDIA, speaker),
-            pump("mic→phone", MediaRecorder.AudioSource.MIC, mic, AudioAttributes.USAGE_VOICE_COMMUNICATION, scoOut),
+            pump("phone→speaker", MediaRecorder.AudioSource.VOICE_COMMUNICATION, scoIn, AudioAttributes.USAGE_MEDIA, speaker, farEnd = true),
+            pump("mic→phone", MediaRecorder.AudioSource.MIC, mic, AudioAttributes.USAGE_VOICE_COMMUNICATION, scoOut, farEnd = false),
         )
         threads.forEach { it.start() }
     }
@@ -109,6 +109,7 @@ class AudioBridge(private val context: Context) {
         from: AudioDeviceInfo?,
         usage: Int,
         to: AudioDeviceInfo?,
+        farEnd: Boolean,
     ): Thread = Thread({
         val rate = SAMPLE_RATE
         val inFormat = AudioFormat.CHANNEL_IN_MONO
@@ -146,6 +147,8 @@ class AudioBridge(private val context: Context) {
             val buffer = ShortArray(inSize / 2)
             var loud = 0L
             var frames = 0L
+            var suppressed = 0L
+            var gain = 1f
             var routeLogged = false
             val started = System.currentTimeMillis()
             while (running) {
@@ -155,13 +158,27 @@ class AudioBridge(private val context: Context) {
                 }
                 val n = record.read(buffer, 0, buffer.size)
                 if (n <= 0) continue
+                val level = rms(buffer, n)
+                if (farEnd) {
+                    // The other side is talking: remember it for the microphone direction.
+                    if (level > FAR_END_TALKING) farEndUntil = System.currentTimeMillis() + FAR_END_HOLD_MS
+                } else {
+                    // Echo suppression: while the other side talks, the player's microphone mostly hears
+                    // the player's own speaker. Sending that back makes the other side hear itself and
+                    // can build up into a howl, so the microphone is turned down until they stop.
+                    val target = if (System.currentTimeMillis() < farEndUntil) SUPPRESSED_GAIN else 1f
+                    gain = applyGain(buffer, n, gain, target)
+                    if (target < 1f) suppressed += n
+                }
                 track.write(buffer, 0, n)
                 frames += n
                 if (buffer.take(n).any { it > 500 || it < -500 }) loud += n
                 if (frames >= rate * 5L) {
-                    log("$name: 5s copied, ${loud * 100 / frames}% with sound")
+                    val extra = if (farEnd) "" else ", mic turned down ${suppressed * 100 / frames}%"
+                    log("$name: 5s copied, ${loud * 100 / frames}% with sound$extra")
                     frames = 0
                     loud = 0
+                    suppressed = 0
                 }
             }
         } catch (t: Throwable) {
@@ -173,6 +190,26 @@ class AudioBridge(private val context: Context) {
             runCatching { track?.release() }
         }
     }, "PhoneLink-$name")
+
+    /** Until when the other side counts as talking (for echo suppression). */
+    @Volatile
+    private var farEndUntil = 0L
+
+    private fun rms(buffer: ShortArray, n: Int): Double {
+        var sum = 0.0
+        for (i in 0 until n) sum += buffer[i].toDouble() * buffer[i]
+        return kotlin.math.sqrt(sum / n)
+    }
+
+    /** Scales the block, moving smoothly from [from] to [to] so the change does not click. */
+    private fun applyGain(buffer: ShortArray, n: Int, from: Float, to: Float): Float {
+        if (from == 1f && to == 1f) return 1f
+        for (i in 0 until n) {
+            val g = from + (to - from) * (i + 1) / n
+            buffer[i] = (buffer[i] * g).toInt().coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
+        }
+        return to
+    }
 
     private fun waitForDevice(flag: Int, type: Int): AudioDeviceInfo? {
         repeat(10) {
@@ -202,6 +239,13 @@ class AudioBridge(private val context: Context) {
     companion object {
         /** Bluetooth call audio here is narrow-band (CVSD, 8 kHz). */
         private const val SAMPLE_RATE = 8_000
+
+        /** Level (RMS) above which the other side counts as talking. */
+        private const val FAR_END_TALKING = 600.0
+        /** How long the microphone stays down after the other side's last loud moment. */
+        private const val FAR_END_HOLD_MS = 300L
+        /** Microphone level while the other side talks (about -20 dB). */
+        private const val SUPPRESSED_GAIN = 0.1f
         private const val ROLE_INPUT = 1
         private const val ROLE_OUTPUT = 2
         private const val DEVICE_OUT_BLUETOOTH_SCO = 0x10

@@ -50,6 +50,7 @@ class LinkService : Service() {
     private lateinit var bridge: AudioBridge
     private var bridgeOffSince: Long? = null
     private var lastAudioOnPlayer = false
+    private var audioMovedAway = false
     private var ringtone: Ringtone? = null
     private var shownIncomingId: Int? = null
 
@@ -249,11 +250,20 @@ class LinkService : Service() {
         if (bridgeWanted) {
             bridgeOffSince = null
             bridge.start(s.phoneAddress!!)
-            if (s.audioOnPlayer && !lastAudioOnPlayer) bridge.audioReturned()
+            // Re-send "BT_SCO=on" only when the sound really went to the phone and came back: sending it
+            // while the path is running cut the microphone direction off.
+            if (lastAudioOnPlayer && !s.audioOnPlayer) audioMovedAway = true
+            if (s.audioOnPlayer && audioMovedAway) {
+                audioMovedAway = false
+                bridge.audioReturned()
+            }
         } else {
             // Call states flicker for a moment between calls (hold, waiting): stop only after a pause.
             val since = bridgeOffSince ?: now.also { bridgeOffSince = it }
-            if (now - since > 3_000) bridge.stop()
+            if (now - since > 3_000) {
+                bridge.stop()
+                audioMovedAway = false
+            }
         }
         lastAudioOnPlayer = s.audioOnPlayer
 
