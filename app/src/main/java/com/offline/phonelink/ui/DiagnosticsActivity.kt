@@ -15,6 +15,8 @@ import com.offline.phonelink.R
 import com.offline.phonelink.bt.HfpClient
 import com.offline.phonelink.bt.LinkService
 import com.offline.phonelink.bt.LogCollector
+import com.offline.phonelink.bt.AudioBridge
+import com.offline.phonelink.bt.PhoneAppLink
 import android.content.Intent
 import com.offline.phonelink.bt.SystemCheck
 import com.offline.phonelink.bt.SystemInstaller
@@ -46,6 +48,9 @@ class DiagnosticsActivity : AppCompatActivity() {
         }
         b.enableNow.setOnClickListener { enableNow() }
         b.collectLog.setOnClickListener { collectLog() }
+        b.phoneAppLink.setOnClickListener { togglePhoneAppLink() }
+        b.bridgeSwitch.isChecked = AudioBridge.isEnabled(this)
+        b.bridgeSwitch.setOnCheckedChangeListener { _, on -> AudioBridge.setEnabled(this, on) }
         b.installSystem.setOnClickListener {
             confirm(R.string.install_system_confirm, R.string.install_system_go) {
                 runInstaller(R.string.install_done) { SystemInstaller.install(this) }
@@ -65,6 +70,9 @@ class DiagnosticsActivity : AppCompatActivity() {
             val system = SystemCheck.isSystemApp(this@DiagnosticsActivity)
             b.installSystem.visibility = if (system) View.GONE else View.VISIBLE
             b.uninstallSystem.visibility = if (system) View.VISIBLE else View.GONE
+            val link = PhoneAppLink.isEnabled(this@DiagnosticsActivity)
+            b.phoneAppLink.visibility = if (link == null) View.GONE else View.VISIBLE
+            b.phoneAppLink.setText(if (link == false) R.string.phone_app_link_on else R.string.phone_app_link_off)
             b.checks.removeAllViews()
             for (c in checks) addRow(c)
             report = buildString {
@@ -136,6 +144,14 @@ class DiagnosticsActivity : AppCompatActivity() {
             val audioOn = hfp.audioOnPlayer(phone)
             list += Check(null, if (audioOn) "ערוץ הקול פתוח לנגן" else "ערוץ הקול סגור (נפתח בזמן שיחה)")
         }
+        when (PhoneAppLink.isEnabled(this)) {
+            true -> list += Check(
+                false, "השיחות עוברות גם לאפליקציית הטלפון הרגילה",
+                "בנגן הזה זה מקריס את שירות השמע בזמן שיחה (ולכן אין קול). לחץ למטה על \"נתק מאפליקציית הטלפון הרגילה\".",
+            )
+            false -> list += Check(true, "השיחות עוברות רק דרך \"דיבורית\"")
+            null -> {}
+        }
         val copied = PhoneBook.copiedFromPhone(this)
         list += Check(
             if (copied > 0) true else null,
@@ -188,6 +204,31 @@ class DiagnosticsActivity : AppCompatActivity() {
                 }
                 .setNegativeButton(android.R.string.ok, null)
                 .show()
+        }
+    }
+
+    private fun togglePhoneAppLink() {
+        val turnOn = PhoneAppLink.isEnabled(this) == false
+        confirm(
+            if (turnOn) R.string.phone_app_link_on_confirm else R.string.phone_app_link_off_confirm,
+            if (turnOn) R.string.phone_app_link_on else R.string.phone_app_link_off,
+        ) {
+            b.phoneAppLink.isEnabled = false
+            lifecycleScope.launch {
+                val result = withContext(Dispatchers.IO) { PhoneAppLink.setEnabled(this@DiagnosticsActivity, turnOn) }
+                b.phoneAppLink.isEnabled = true
+                b.shellOutput.visibility = View.VISIBLE
+                b.shellOutput.text = "exit ${result.code}\n${result.output}"
+                Toast.makeText(
+                    this@DiagnosticsActivity,
+                    if (result.ok) R.string.phone_app_link_done else R.string.install_failed,
+                    Toast.LENGTH_LONG,
+                ).show()
+                delay(5_000)
+                LinkService.current?.hfp?.open()
+                LinkService.current?.refresh()
+                runChecks()
+            }
         }
     }
 

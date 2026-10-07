@@ -270,6 +270,7 @@ class MainActivity : AppCompatActivity() {
             Manifest.permission.READ_CONTACTS,
             Manifest.permission.READ_CALL_LOG,
             Manifest.permission.POST_NOTIFICATIONS,
+            Manifest.permission.RECORD_AUDIO,
         ).filter { checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED }
         if (wanted.isNotEmpty()) {
             Toast.makeText(this, R.string.permissions_needed, Toast.LENGTH_LONG).show()

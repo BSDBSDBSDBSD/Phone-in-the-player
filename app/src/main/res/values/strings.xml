@@ -91,4 +91,10 @@
     <string name="collect_log_done">היומן נשמר בתיקיית ההורדות בשם PhoneLink-log.txt.\n\nאפשר להעביר את הקובץ למחשב ולצרף אותו לשיחה, או לשתף אותו מכאן.</string>
     <string name="share">שתף</string>
     <string name="collect_log_failed">איסוף היומן לא הצליח. ודא שאישרת ל\"דיבורית\" גישת Root ב-Magisk.</string>
+    <string name="phone_app_link_off">נתק מאפליקציית הטלפון הרגילה</string>
+    <string name="phone_app_link_on">חבר שוב לאפליקציית הטלפון הרגילה</string>
+    <string name="phone_app_link_off_confirm">השיחות יעברו רק דרך \"דיבורית\", ואפליקציית הטלפון הרגילה לא תקבל אותן. כך הנגן לא עובר למצב \"שיחה סלולרית\" שגורם לקריסת השמע, ואפליקציית הבלוטות\' לא קורסת.\n\nהבלוטות\' יופעל מחדש, והחיבור לטלפון יתחדש תוך כמה שניות. אפשר לבטל בכל רגע.</string>
+    <string name="phone_app_link_on_confirm">השיחות יועברו שוב גם לאפליקציית הטלפון הרגילה. בנגן הזה זה גורם לקריסת השמע בזמן שיחה.\n\nהבלוטות\' יופעל מחדש.</string>
+    <string name="phone_app_link_done">בוצע. החיבור לטלפון יתחדש תוך כמה שניות.</string>
+    <string name="bridge_switch">העברת קול דרך \"דיבורית\" (ניסיוני)</string>
 </resources>

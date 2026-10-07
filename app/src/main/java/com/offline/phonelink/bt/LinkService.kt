@@ -47,6 +47,7 @@ class LinkService : Service() {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private lateinit var client: HfpClient
+    private lateinit var bridge: AudioBridge
     private var ringtone: Ringtone? = null
     private var shownIncomingId: Int? = null
 
@@ -90,6 +91,7 @@ class LinkService : Service() {
         } catch (t: Throwable) {
             Log.w(TAG, "foreground start refused", t)
         }
+        bridge = AudioBridge(this)
         client = HfpClient(this) { refresh() }
         client.open()
 
@@ -124,6 +126,7 @@ class LinkService : Service() {
 
     override fun onDestroy() {
         stopRinging()
+        bridge.release()
         runCatching { unregisterReceiver(receiver) }
         client.close()
         scope.cancel()
@@ -234,6 +237,13 @@ class LinkService : Service() {
                 HistoryEntry(t.number, PhoneBook.nameFor(this, t.number), direction, t.since, duration),
             )
         }
+
+        // Carry the call's sound by software when the player cannot (see AudioBridge).
+        val talking = s.calls.any { it.isActive || it.isDialing }
+        val bridgeWanted = talking && s.audioOnPlayer && s.phoneAddress != null &&
+            AudioBridge.isEnabled(this) && PhoneAppLink.isEnabled(this) == false &&
+            checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        if (bridgeWanted) bridge.start(s.phoneAddress!!) else bridge.stop()
 
         val ringing = s.ringing
         if (ringing != null && !s.audioOnPlayer && ringing.state == PhoneCall.STATE_INCOMING) startRinging() else stopRinging()
