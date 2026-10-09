@@ -17,6 +17,7 @@ import com.offline.phonelink.bt.LinkService
 import com.offline.phonelink.bt.LogCollector
 import com.offline.phonelink.bt.SystemFilesCollector
 import com.offline.phonelink.bt.ChannelProbe
+import com.offline.phonelink.bt.HeadsetMicTest
 import com.offline.phonelink.bt.AudioBridge
 import com.offline.phonelink.bt.PhoneAppLink
 import android.content.Intent
@@ -51,6 +52,27 @@ class DiagnosticsActivity : AppCompatActivity() {
         b.enableNow.setOnClickListener { enableNow() }
         b.collectLog.setOnClickListener { collectLog() }
         b.collectSystemFiles.setOnClickListener { collectSystemFiles() }
+        b.headsetTest.setOnClickListener {
+            confirm(R.string.headset_test_confirm, R.string.probe_start) { headsetTest() }
+        }
+        b.basicScoSwitch.isChecked = SystemCheck.basicScoEnabled()
+        b.basicScoSwitch.setOnCheckedChangeListener { sw, on ->
+            sw.isEnabled = false
+            lifecycleScope.launch {
+                val r = withContext(Dispatchers.IO) { SystemCheck.setBasicSco(on) }
+                sw.isEnabled = true
+                b.shellOutput.visibility = View.VISIBLE
+                b.shellOutput.text = "exit ${r.code}\n${r.output}"
+                Toast.makeText(
+                    this@DiagnosticsActivity,
+                    if (r.ok) R.string.basic_sco_done else R.string.install_failed,
+                    Toast.LENGTH_LONG,
+                ).show()
+                delay(5_000)
+                LinkService.current?.hfp?.open()
+                LinkService.current?.refresh()
+            }
+        }
         b.probeChannels.setOnClickListener {
             confirm(R.string.probe_channels_confirm, R.string.probe_start) { probeChannels() }
         }
@@ -180,6 +202,32 @@ class DiagnosticsActivity : AppCompatActivity() {
             b.enableNow.isEnabled = true
             b.enableNow.setText(R.string.diag_enable_now)
             runChecks()
+        }
+    }
+
+    private fun headsetTest() {
+        b.headsetTest.isEnabled = false
+        b.headsetTest.setText(R.string.diag_working)
+        lifecycleScope.launch {
+            val r = withContext(Dispatchers.IO) { HeadsetMicTest.run(this@DiagnosticsActivity) }
+            b.headsetTest.isEnabled = true
+            b.headsetTest.setText(R.string.headset_test)
+            val message = if (!r.found) getString(R.string.headset_test_no_device)
+            else getString(
+                R.string.headset_test_result, r.soundPercent, r.peak,
+                getString(if (r.routed) R.string.yes else R.string.no), r.chipFlags,
+            )
+            b.shellOutput.visibility = View.VISIBLE
+            b.shellOutput.text = message
+            report += "\nHeadset test: $message\n"
+            MaterialAlertDialogBuilder(this@DiagnosticsActivity)
+                .setMessage(message)
+                .setPositiveButton(R.string.diag_copy) { _, _ ->
+                    getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText("PhoneLink", message))
+                    Toast.makeText(this@DiagnosticsActivity, R.string.diag_copied, Toast.LENGTH_SHORT).show()
+                }
+                .setNegativeButton(android.R.string.ok, null)
+                .show()
         }
     }
 

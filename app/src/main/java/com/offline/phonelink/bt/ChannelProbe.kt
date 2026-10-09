@@ -32,13 +32,24 @@ object ChannelProbe {
     class ChannelResult(val device: Int, val name: String, val format: String?, val error: String?, val soundPercent: Int?, val peak: Int?)
     class Result(val ok: Boolean, val file: File, val channels: List<ChannelResult>, val error: String)
 
-    fun run(context: Context): Result {
+    /** Copies the tinyalsa tools to [TOOLS_DIR] (as root) and returns that folder. */
+    fun installTools(context: Context): String {
         val cache = context.cacheDir
         for (tool in TOOLS) {
             val f = File(cache, tool)
             context.assets.open("tools/$tool").use { input -> f.outputStream().use { input.copyTo(it) } }
             f.setReadable(true, false)
         }
+        SystemCheck.root(
+            "mkdir -p $TOOLS_DIR; for t in ${TOOLS.joinToString(" ")}; do cp '${cache.absolutePath}'/${'$'}t $TOOLS_DIR/${'$'}t; chmod 755 $TOOLS_DIR/${'$'}t; done",
+            20,
+        )
+        return TOOLS_DIR
+    }
+
+    fun run(context: Context): Result {
+        val cache = context.cacheDir
+        installTools(context)
         val report = File(cache, "channels.txt").apply { writeText(""); setWritable(true, false) }
         // Root writes each capture into a file this app created, so the app can read it back.
         val captures = CHANNELS.associate { (dev, _) ->

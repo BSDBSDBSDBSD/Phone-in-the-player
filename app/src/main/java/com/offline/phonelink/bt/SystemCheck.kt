@@ -54,4 +54,16 @@ object SystemCheck {
             "; cmd bluetooth_manager disable; sleep 3; cmd bluetooth_manager enable"
         return root(cmd, 30)
     }
+
+    /** Android's switch for using the basic SCO link instead of enhanced eSCO for call audio. */
+    private const val BASIC_SCO_PROP = "bluetooth.sco.disable_esco"
+
+    fun basicScoEnabled(): Boolean = prop(BASIC_SCO_PROP) == "true"
+
+    /**
+     * Experiment: with the basic SCO link the Bluetooth chip may route call audio differently. Lasts until
+     * the next restart (setprop), and restarts Bluetooth so it takes effect.
+     */
+    fun setBasicSco(on: Boolean): ShellResult =
+        root("setprop $BASIC_SCO_PROP ${if (on) "true" else "false"}; cmd bluetooth_manager disable; sleep 3; cmd bluetooth_manager enable", 30)
 }

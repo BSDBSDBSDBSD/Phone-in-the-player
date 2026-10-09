@@ -88,6 +88,20 @@
                 android:text="@string/probe_channels" />
 
             <com.google.android.material.button.MaterialButton
+                android:id="@+id/headsetTest"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/headset_test" />
+
+            <com.google.android.material.materialswitch.MaterialSwitch
+                android:id="@+id/basicScoSwitch"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginVertical="4dp"
+                android:text="@string/basic_sco_switch" />
+
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/uninstallSystem"
                 style="@style/Widget.Material3.Button.TextButton"
                 android:layout_width="match_parent"
