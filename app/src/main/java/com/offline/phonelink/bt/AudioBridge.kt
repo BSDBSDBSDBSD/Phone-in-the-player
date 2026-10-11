@@ -141,10 +141,14 @@ class AudioBridge(private val context: Context) {
                 )
                 .build()
             if (to != null) track.preferredDevice = to
+            if (!farEnd) attachEchoCanceller(name, record.audioSessionId)
             record.startRecording()
             track.play()
             log("$name: running (in=${record.routedDevice?.type}, out=${track.routedDevice?.type})")
-            val buffer = ShortArray(inSize / 2)
+            // Small blocks (20 ms) so echo suppression reacts quickly.
+            val buffer = ShortArray(rate / 50)
+            var levelSum = 0.0
+            var levelBlocks = 0
             var loud = 0L
             var frames = 0L
             var suppressed = 0L
@@ -159,6 +163,8 @@ class AudioBridge(private val context: Context) {
                 val n = record.read(buffer, 0, buffer.size)
                 if (n <= 0) continue
                 val level = rms(buffer, n)
+                levelSum += level
+                levelBlocks++
                 if (farEnd) {
                     // The other side is talking: remember it for the microphone direction.
                     if (level > FAR_END_TALKING) farEndUntil = System.currentTimeMillis() + FAR_END_HOLD_MS
@@ -175,7 +181,10 @@ class AudioBridge(private val context: Context) {
                 if (buffer.take(n).any { it > 500 || it < -500 }) loud += n
                 if (frames >= rate * 5L) {
                     val extra = if (farEnd) "" else ", mic turned down ${suppressed * 100 / frames}%"
-                    log("$name: 5s copied, ${loud * 100 / frames}% with sound$extra")
+                    val avg = if (levelBlocks == 0) 0 else (levelSum / levelBlocks).toInt()
+                    log("$name: 5s copied, ${loud * 100 / frames}% with sound, average level $avg$extra")
+                    levelSum = 0.0
+                    levelBlocks = 0
                     frames = 0
                     loud = 0
                     suppressed = 0
@@ -190,6 +199,21 @@ class AudioBridge(private val context: Context) {
             runCatching { track?.release() }
         }
     }, "PhoneLink-$name")
+
+    /** Turns on the player's own echo canceller and noise suppressor for the microphone, where it has them. */
+    private fun attachEchoCanceller(name: String, session: Int) {
+        val aec = runCatching {
+            if (android.media.audiofx.AcousticEchoCanceler.isAvailable()) {
+                android.media.audiofx.AcousticEchoCanceler.create(session)?.apply { enabled = true }
+            } else null
+        }.getOrNull()
+        val ns = runCatching {
+            if (android.media.audiofx.NoiseSuppressor.isAvailable()) {
+                android.media.audiofx.NoiseSuppressor.create(session)?.apply { enabled = true }
+            } else null
+        }.getOrNull()
+        log("$name: echo canceller ${if (aec?.enabled == true) "on" else "not available"}, noise suppressor ${if (ns?.enabled == true) "on" else "not available"}")
+    }
 
     /** Until when the other side counts as talking (for echo suppression). */
     @Volatile
@@ -241,11 +265,14 @@ class AudioBridge(private val context: Context) {
         private const val SAMPLE_RATE = 8_000
 
         /** Level (RMS) above which the other side counts as talking. */
-        private const val FAR_END_TALKING = 600.0
-        /** How long the microphone stays down after the other side's last loud moment. */
-        private const val FAR_END_HOLD_MS = 300L
-        /** Microphone level while the other side talks (about -20 dB). */
-        private const val SUPPRESSED_GAIN = 0.1f
+        private const val FAR_END_TALKING = 300.0
+        /**
+         * How long the microphone stays down after the other side's last loud moment. Long enough to
+         * cover the speaker output's buffering, after which its echo still reaches the microphone.
+         */
+        private const val FAR_END_HOLD_MS = 700L
+        /** Microphone level while the other side talks (about -34 dB: speakerphone-style half duplex). */
+        private const val SUPPRESSED_GAIN = 0.02f
         private const val ROLE_INPUT = 1
         private const val ROLE_OUTPUT = 2
         private const val DEVICE_OUT_BLUETOOTH_SCO = 0x10
