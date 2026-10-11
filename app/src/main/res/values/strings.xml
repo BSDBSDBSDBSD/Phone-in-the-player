@@ -111,4 +111,26 @@
     <string name="no">לא</string>
     <string name="basic_sco_switch">חיבור קול בסיסי SCO (ניסוי, עד הפעלה מחדש)</string>
     <string name="basic_sco_done">הבלוטות\' הופעל מחדש. חכה כמה שניות שהטלפון יתחבר, ונסה שיחה עם \"בדיקת ערוצי בלוטות\'\".</string>
+    <string name="phone_status_title">מצב הטלפון</string>
+    <string name="phone_status_note">הנתונים מגיעים מהטלפון דרך הבלוטות\'. חלק מהטלפונים לא מדווחים על הכל (למשל המספר של עצמם), ואז מופיע \"לא ידוע\".\nאנשי הקשר מהזיכרון ומכרטיס ה-SIM מגיעים יחד, אם הטלפון משתף את שניהם.</string>
+    <string name="status_row_phone">טלפון</string>
+    <string name="status_row_connection">חיבור</string>
+    <string name="status_row_battery">סוללה</string>
+    <string name="status_row_signal">קליטה</string>
+    <string name="status_row_network">רשת</string>
+    <string name="status_row_roaming">נדידה (רומינג)</string>
+    <string name="status_row_number">המספר של הטלפון</string>
+    <string name="status_row_contacts">אנשי קשר שהגיעו מהטלפון</string>
+    <string name="status_unknown">לא ידוע</string>
+    <string name="status_number_unknown">הטלפון לא מדווח על המספר שלו</string>
+    <string name="status_of_five">%1$d מתוך 5</string>
+    <string name="status_connected_short">מחובר</string>
+    <string name="status_disconnected_short">לא מחובר</string>
+    <string name="status_network_ok">יש קליטה</string>
+    <string name="status_network_none">אין רשת</string>
+    <string name="channel_alerts">התראות מהטלפון</string>
+    <string name="alert_battery_title">הסוללה של %1$s חלשה</string>
+    <string name="alert_battery_text">כדאי להטעין את הטלפון, אחרת השיחות דרך הנגן ייפסקו.</string>
+    <string name="alert_missed_one">שיחה שלא נענתה</string>
+    <string name="alert_missed_many">%1$d שיחות שלא נענו</string>
 </resources>

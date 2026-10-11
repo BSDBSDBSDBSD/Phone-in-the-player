@@ -83,6 +83,7 @@ class MainActivity : AppCompatActivity() {
 
     /** tel: links from other apps fill the dial pad. */
     private fun handleDialIntent(intent: Intent?) {
+        if (intent?.getStringExtra(EXTRA_TAB) == TAB_RECENTS) b.tabs.selectedItemId = R.id.tab_recents
         val number = intent?.data?.takeIf { it.scheme == "tel" }?.schemeSpecificPart ?: return
         b.tabs.selectedItemId = R.id.tab_dialer
         setNumber(PhoneNumbers.clean(number))
@@ -93,6 +94,7 @@ class MainActivity : AppCompatActivity() {
     private fun setUpToolbar() {
         b.toolbar.setOnMenuItemClickListener { item ->
             when (item.itemId) {
+                R.id.menu_phone_status -> startActivity(Intent(this, PhoneStatusActivity::class.java))
                 R.id.menu_choose_phone -> choosePhone()
                 R.id.menu_resync -> {
                     LinkService.current?.resyncPhonebook()
@@ -139,6 +141,7 @@ class MainActivity : AppCompatActivity() {
         when {
             !s.profileReady -> startActivity(Intent(this, DiagnosticsActivity::class.java))
             !s.connected -> choosePhone()
+            else -> startActivity(Intent(this, PhoneStatusActivity::class.java))
         }
     }
 
@@ -276,5 +279,11 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, R.string.permissions_needed, Toast.LENGTH_LONG).show()
             askPermissions.launch(wanted.toTypedArray())
         }
+    }
+
+    companion object {
+        /** Opens a given tab (from a notification). */
+        const val EXTRA_TAB = "tab"
+        const val TAB_RECENTS = "recents"
     }
 }

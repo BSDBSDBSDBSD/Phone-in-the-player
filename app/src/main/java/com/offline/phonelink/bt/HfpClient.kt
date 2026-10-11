@@ -235,6 +235,9 @@ class HfpClient(private val context: Context, private val onChange: () -> Unit) 
         const val EXTRA_BATTERY = "android.bluetooth.headsetclient.extra.BATTERY_LEVEL"
         const val EXTRA_OPERATOR = "android.bluetooth.headsetclient.extra.OPERATOR_NAME"
         const val EXTRA_NETWORK = "android.bluetooth.headsetclient.extra.NETWORK_STATUS"
+        const val EXTRA_ROAMING = "android.bluetooth.headsetclient.extra.NETWORK_ROAMING"
+        /** The phone's own number, when it tells it (AT+CNUM). */
+        const val EXTRA_SUBSCRIBER = "android.bluetooth.headsetclient.extra.SUBSCRIBER_INFO"
 
         private val methodCache = HashMap<String, Method>()
 

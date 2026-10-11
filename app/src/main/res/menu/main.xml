@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@+id/menu_phone_status" android:title="@string/phone_status_title" />
     <item android:id="@+id/menu_choose_phone" android:title="@string/choose_phone" />
     <item android:id="@+id/menu_resync" android:title="@string/menu_resync" />
     <item android:id="@+id/menu_bt_settings" android:title="@string/open_bt_settings" />

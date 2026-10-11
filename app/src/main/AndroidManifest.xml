@@ -73,6 +73,11 @@
             android:turnScreenOn="true" />
 
         <activity
+            android:name=".ui.PhoneStatusActivity"
+            android:exported="false"
+            android:label="@string/phone_status_title" />
+
+        <activity
             android:name=".ui.DiagnosticsActivity"
             android:exported="false"
             android:label="@string/diag_title" />

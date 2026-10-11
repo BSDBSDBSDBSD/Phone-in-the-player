@@ -17,6 +17,11 @@ data class LinkSnapshot(
     val signal: Int? = null,
     val battery: Int? = null,
     val operator: String? = null,
+    /** The phone has network service (null: not reported). */
+    val networkAvailable: Boolean? = null,
+    val roaming: Boolean? = null,
+    /** The phone's own number, if it reports it. */
+    val ownNumber: String? = null,
 ) {
     val ringing: PhoneCall? get() = calls.firstOrNull { it.isRinging }
     val hasCall: Boolean get() = calls.any { !it.isOver }

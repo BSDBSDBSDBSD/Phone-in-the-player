@@ -68,6 +68,9 @@ class LinkService : Service() {
                     signal = intent.intExtraOrNull(HfpClient.EXTRA_SIGNAL) ?: agExtras.signal,
                     battery = intent.intExtraOrNull(HfpClient.EXTRA_BATTERY) ?: agExtras.battery,
                     operator = intent.getStringExtra(HfpClient.EXTRA_OPERATOR) ?: agExtras.operator,
+                    network = intent.intExtraOrNull(HfpClient.EXTRA_NETWORK) ?: agExtras.network,
+                    roaming = intent.intExtraOrNull(HfpClient.EXTRA_ROAMING) ?: agExtras.roaming,
+                    subscriber = intent.getStringExtra(HfpClient.EXTRA_SUBSCRIBER) ?: agExtras.subscriber,
                 )
             }
             if (intent.action == BluetoothAdapter.ACTION_STATE_CHANGED &&
@@ -77,7 +80,14 @@ class LinkService : Service() {
         }
     }
 
-    private data class AgExtras(val signal: Int? = null, val battery: Int? = null, val operator: String? = null)
+    private data class AgExtras(
+        val signal: Int? = null,
+        val battery: Int? = null,
+        val operator: String? = null,
+        val network: Int? = null,
+        val roaming: Int? = null,
+        val subscriber: String? = null,
+    )
     private var agExtras = AgExtras()
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -108,6 +118,7 @@ class LinkService : Service() {
             addAction(BluetoothDevice.ACTION_BOND_STATE_CHANGED)
         }
         ContextCompat.registerReceiver(this, receiver, filter, ContextCompat.RECEIVER_EXPORTED)
+        PhoneAlerts.start(this)
 
         // Broadcasts may not reach us on every build: also look at the phone regularly.
         scope.launch {
@@ -129,6 +140,7 @@ class LinkService : Service() {
 
     override fun onDestroy() {
         stopRinging()
+        PhoneAlerts.stop(this)
         bridge.release()
         runCatching { unregisterReceiver(receiver) }
         client.close()
@@ -209,11 +221,15 @@ class LinkService : Service() {
             signal = status?.intOrNull(HfpClient.EXTRA_SIGNAL) ?: agExtras.signal,
             battery = status?.intOrNull(HfpClient.EXTRA_BATTERY) ?: agExtras.battery,
             operator = status?.getString(HfpClient.EXTRA_OPERATOR) ?: agExtras.operator,
+            networkAvailable = (status?.intOrNull(HfpClient.EXTRA_NETWORK) ?: agExtras.network)?.let { it != 0 },
+            roaming = (status?.intOrNull(HfpClient.EXTRA_ROAMING) ?: agExtras.roaming)?.let { it != 0 },
+            ownNumber = (status?.getString(HfpClient.EXTRA_SUBSCRIBER) ?: agExtras.subscriber)?.takeIf { it.isNotBlank() },
         )
         if (device == null) agExtras = AgExtras()
         val before = LinkState.state.value
         LinkState.set(snapshot)
         followCalls(snapshot)
+        PhoneAlerts.onStatus(this, snapshot)
         if (before.connected != snapshot.connected || before.phoneName != snapshot.phoneName ||
             before.hasCall != snapshot.hasCall
         ) notifyLink(snapshot)
@@ -235,10 +251,9 @@ class LinkService : Service() {
                 else -> CallDirection.MISSED
             }
             val duration = t.answeredAt?.let { (now - it) / 1000 } ?: 0
-            OwnHistory.add(
-                this,
-                HistoryEntry(t.number, PhoneBook.nameFor(this, t.number), direction, t.since, duration),
-            )
+            val entry = HistoryEntry(t.number, PhoneBook.nameFor(this, t.number), direction, t.since, duration)
+            OwnHistory.add(this, entry)
+            if (direction == CallDirection.MISSED) PhoneAlerts.missedNow(this, entry)
         }
 
         // Carry the call's sound by software when the player cannot (see AudioBridge). It stays on for
