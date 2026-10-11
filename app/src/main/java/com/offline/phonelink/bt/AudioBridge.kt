@@ -250,14 +250,14 @@ class AudioBridge(private val context: Context) {
         private const val SAMPLE_RATE = 8_000
 
         /** Level (RMS) above which the other side counts as talking. */
-        private const val FAR_END_TALKING = 300.0
+        private const val FAR_END_TALKING = 2000.0
         /**
          * How long the microphone stays down after the other side's last loud moment. Long enough to
          * cover the speaker output's buffering, after which its echo still reaches the microphone.
          */
-        private const val FAR_END_HOLD_MS = 700L
-        /** Microphone level while the other side talks (about -34 dB: speakerphone-style half duplex). */
-        private const val SUPPRESSED_GAIN = 0.02f
+        private const val FAR_END_HOLD_MS = 150L
+        /** Microphone level while the other side clearly talks (about -10 dB): dips, never cuts off. */
+        private const val SUPPRESSED_GAIN = 0.3f
         private const val ROLE_INPUT = 1
         private const val ROLE_OUTPUT = 2
         private const val DEVICE_OUT_BLUETOOTH_SCO = 0x10
