@@ -88,6 +88,13 @@
                 android:text="@string/probe_channels" />
 
             <com.google.android.material.button.MaterialButton
+                android:id="@+id/serviceProbe"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/service_probe" />
+
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/headsetTest"
                 style="@style/Widget.Material3.Button.TonalButton"
                 android:layout_width="match_parent"

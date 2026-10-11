@@ -133,4 +133,10 @@
     <string name="alert_battery_text">כדאי להטעין את הטלפון, אחרת השיחות דרך הנגן ייפסקו.</string>
     <string name="alert_missed_one">שיחה שלא נענתה</string>
     <string name="alert_missed_many">%1$d שיחות שלא נענו</string>
+    <string name="service_probe">בדוק מה הטלפון תומך (בלוטוס)</string>
+    <string name="service_probe_none">אין טלפון מחובר. חבר טלפון קודם.</string>
+    <string name="service_probe_title">שירותים שהטלפון פותח</string>
+    <string name="service_probe_empty">הטלפון עדיין לא דיווח על השירותים שלו. נסה שוב בעוד כמה שניות.</string>
+    <string name="service_yes">נתמך</string>
+    <string name="service_no">לא נתמך</string>
 </resources>

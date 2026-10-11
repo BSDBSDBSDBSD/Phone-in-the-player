@@ -9,7 +9,6 @@ import android.view.View
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.offline.phonelink.R
 import com.offline.phonelink.bt.HfpClient
@@ -18,6 +17,10 @@ import com.offline.phonelink.bt.LogCollector
 import com.offline.phonelink.bt.SystemFilesCollector
 import com.offline.phonelink.bt.ChannelProbe
 import com.offline.phonelink.bt.HeadsetMicTest
+import com.offline.phonelink.bt.ServiceProbe
+import android.content.BroadcastReceiver
+import android.content.IntentFilter
+import androidx.core.content.ContextCompat
 import com.offline.phonelink.bt.AudioBridge
 import com.offline.phonelink.bt.PhoneAppLink
 import android.content.Intent
@@ -52,6 +55,7 @@ class DiagnosticsActivity : AppCompatActivity() {
         b.enableNow.setOnClickListener { enableNow() }
         b.collectLog.setOnClickListener { collectLog() }
         b.collectSystemFiles.setOnClickListener { collectSystemFiles() }
+        b.serviceProbe.setOnClickListener { probeServices() }
         b.headsetTest.setOnClickListener {
             confirm(R.string.headset_test_confirm, R.string.probe_start) { headsetTest() }
         }
@@ -203,6 +207,46 @@ class DiagnosticsActivity : AppCompatActivity() {
             b.enableNow.setText(R.string.diag_enable_now)
             runChecks()
         }
+    }
+
+    @android.annotation.SuppressLint("MissingPermission")
+    private fun probeServices() {
+        val device = LinkService.current?.hfp?.connectedPhone()
+        if (device == null) {
+            Toast.makeText(this, R.string.service_probe_none, Toast.LENGTH_LONG).show()
+            return
+        }
+        // The phone's service list can be stale: ask it to refresh, then show it.
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(ctx: android.content.Context, i: android.content.Intent) {
+                runCatching { unregisterReceiver(this) }
+                showServices(device)
+            }
+        }
+        ContextCompat.registerReceiver(this, receiver, IntentFilter(ServiceProbe.ACTION_UUID), ContextCompat.RECEIVER_EXPORTED)
+        ServiceProbe.refresh(device)
+        b.serviceProbe.postDelayed({ runCatching { unregisterReceiver(receiver) }; showServices(device) }, 4_000)
+    }
+
+    @android.annotation.SuppressLint("MissingPermission")
+    private fun showServices(device: android.bluetooth.BluetoothDevice) {
+        val services = ServiceProbe.services(device)
+        val text = if (services.isEmpty()) getString(R.string.service_probe_empty)
+        else services.joinToString("\n\n") { s ->
+            "${if (s.supported) "\u2713" else "\u2717"} ${s.name}\n${s.use}"
+        }
+        report += "\nServices: " + services.joinToString(", ") { "${it.shortUuid}:${if (it.supported) "yes" else "no"}" } + "\n"
+        b.shellOutput.visibility = View.VISIBLE
+        b.shellOutput.text = text
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.service_probe_title)
+            .setMessage(text)
+            .setPositiveButton(R.string.diag_copy) { _, _ ->
+                getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText("PhoneLink", text))
+                Toast.makeText(this, R.string.diag_copied, Toast.LENGTH_SHORT).show()
+            }
+            .setNegativeButton(android.R.string.ok, null)
+            .show()
     }
 
     private fun headsetTest() {
