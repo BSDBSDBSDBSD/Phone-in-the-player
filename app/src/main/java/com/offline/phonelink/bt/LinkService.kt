@@ -99,7 +99,7 @@ class LinkService : Service() {
         try {
             ServiceCompat.startForeground(
                 this, NOTIF_LINK, linkNotification(LinkState.state.value),
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE,
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE or ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE,
             )
         } catch (t: Throwable) {
             Log.w(TAG, "foreground start refused", t)
