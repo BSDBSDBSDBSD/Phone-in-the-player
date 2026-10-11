@@ -141,12 +141,12 @@ class AudioBridge(private val context: Context) {
                 )
                 .build()
             if (to != null) track.preferredDevice = to
-            if (!farEnd) attachEchoCanceller(name, record.audioSessionId)
             record.startRecording()
             track.play()
             log("$name: running (in=${record.routedDevice?.type}, out=${track.routedDevice?.type})")
-            // Small blocks (20 ms) so echo suppression reacts quickly.
-            val buffer = ShortArray(rate / 50)
+            // The microphone direction reads small blocks (20 ms) so echo suppression reacts quickly; the
+            // Bluetooth direction keeps the larger blocks it worked with.
+            val buffer = ShortArray(if (farEnd) inSize / 2 else rate / 50)
             var levelSum = 0.0
             var levelBlocks = 0
             var loud = 0L
@@ -199,21 +199,6 @@ class AudioBridge(private val context: Context) {
             runCatching { track?.release() }
         }
     }, "PhoneLink-$name")
-
-    /** Turns on the player's own echo canceller and noise suppressor for the microphone, where it has them. */
-    private fun attachEchoCanceller(name: String, session: Int) {
-        val aec = runCatching {
-            if (android.media.audiofx.AcousticEchoCanceler.isAvailable()) {
-                android.media.audiofx.AcousticEchoCanceler.create(session)?.apply { enabled = true }
-            } else null
-        }.getOrNull()
-        val ns = runCatching {
-            if (android.media.audiofx.NoiseSuppressor.isAvailable()) {
-                android.media.audiofx.NoiseSuppressor.create(session)?.apply { enabled = true }
-            } else null
-        }.getOrNull()
-        log("$name: echo canceller ${if (aec?.enabled == true) "on" else "not available"}, noise suppressor ${if (ns?.enabled == true) "on" else "not available"}")
-    }
 
     /** Until when the other side counts as talking (for echo suppression). */
     @Volatile
