@@ -85,7 +85,9 @@ class AudioBridge(private val context: Context) {
         runCatching { audio.startBluetoothSco() }
         @Suppress("DEPRECATION")
         runCatching { audio.isBluetoothScoOn = true }
-        setScoDevices(phoneAddress, available = true)
+        // Bridge mode forces the route at the policy level (via root); native mode uses only the
+        // standard framework APIs so the HAL does its normal car-kit routing without a fight.
+        if (!nativeMode) setScoDevices(phoneAddress, available = true)
         runCatching {
             val scoDev = audio.availableCommunicationDevices.firstOrNull { it.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO }
             if (scoDev != null) log("setCommunicationDevice(sco) -> ${audio.setCommunicationDevice(scoDev)}")
