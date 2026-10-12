@@ -218,16 +218,23 @@ class DiagnosticsActivity : AppCompatActivity() {
             Toast.makeText(this, R.string.service_probe_none, Toast.LENGTH_LONG).show()
             return
         }
-        // The phone's service list can be stale: ask it to refresh, then show it.
+        // The phone's service list can be stale: ask it to refresh, then show it. Whichever happens
+        // first — the refresh broadcast or the 4 s fallback — shows the dialog; the other is a no-op.
+        var shown = false
+        fun showOnce() {
+            if (shown) return
+            shown = true
+            showServices(device)
+        }
         val receiver = object : BroadcastReceiver() {
             override fun onReceive(ctx: android.content.Context, i: android.content.Intent) {
                 runCatching { unregisterReceiver(this) }
-                showServices(device)
+                showOnce()
             }
         }
         ContextCompat.registerReceiver(this, receiver, IntentFilter(ServiceProbe.ACTION_UUID), ContextCompat.RECEIVER_EXPORTED)
         ServiceProbe.refresh(device)
-        b.serviceProbe.postDelayed({ runCatching { unregisterReceiver(receiver) }; showServices(device) }, 4_000)
+        b.serviceProbe.postDelayed({ runCatching { unregisterReceiver(receiver) }; showOnce() }, 4_000)
     }
 
     @android.annotation.SuppressLint("MissingPermission")
@@ -255,10 +262,14 @@ class DiagnosticsActivity : AppCompatActivity() {
         b.headsetTest.isEnabled = false
         b.headsetTest.setText(R.string.diag_working)
         lifecycleScope.launch {
-            val r = withContext(Dispatchers.IO) { HeadsetMicTest.run(this@DiagnosticsActivity) }
+            // run() opens AudioRecord/SCO and can throw (mic not granted, device busy); never let that
+            // escape the coroutine and crash the app — a null result shows the "no device" message.
+            val r = withContext(Dispatchers.IO) {
+                runCatching { HeadsetMicTest.run(this@DiagnosticsActivity) }.getOrNull()
+            }
             b.headsetTest.isEnabled = true
             b.headsetTest.setText(R.string.headset_test)
-            val message = if (!r.found) getString(R.string.headset_test_no_device)
+            val message = if (r == null || !r.found) getString(R.string.headset_test_no_device)
             else getString(
                 R.string.headset_test_result, r.soundPercent, r.peak,
                 getString(if (r.routed) R.string.yes else R.string.no), r.chipFlags,

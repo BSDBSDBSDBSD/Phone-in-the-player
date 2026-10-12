@@ -9,7 +9,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.database.ContentObserver
 import android.os.Handler
-import android.os.Looper
+import android.os.HandlerThread
 import android.provider.CallLog
 import androidx.core.app.NotificationCompat
 import com.offline.phonelink.R
@@ -38,7 +38,8 @@ object PhoneAlerts {
 
     private var batteryWarned = false
     private var observer: ContentObserver? = null
-    private val handler = Handler(Looper.getMainLooper())
+    // The call-log query is IPC + disk, so it runs on its own thread, never the caller's (UI) thread.
+    private var thread: HandlerThread? = null
 
     fun start(context: Context) {
         val app = context.applicationContext
@@ -47,6 +48,9 @@ object PhoneAlerts {
         // First run: only calls missed from now on count, not the whole old history.
         if (!prefs.contains(KEY_LAST_MISSED)) prefs.edit().putLong(KEY_LAST_MISSED, System.currentTimeMillis()).apply()
         if (observer == null && granted(app)) {
+            val ht = HandlerThread("PhoneLink-alerts").also { it.start() }
+            thread = ht
+            val handler = Handler(ht.looper)
             val check = Runnable { checkMissed(app) }
             observer = object : ContentObserver(handler) {
                 override fun onChange(selfChange: Boolean) {
@@ -63,6 +67,8 @@ object PhoneAlerts {
     fun stop(context: Context) {
         observer?.let { runCatching { context.applicationContext.contentResolver.unregisterContentObserver(it) } }
         observer = null
+        thread?.quitSafely()
+        thread = null
     }
 
     fun onStatus(context: Context, s: LinkSnapshot) {

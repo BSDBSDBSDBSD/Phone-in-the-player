@@ -28,9 +28,11 @@ object HeadsetMicTest {
             am.mode = AudioManager.MODE_IN_COMMUNICATION
             am.setCommunicationDevice(headset)
             var routed = false
-            repeat(40) {
-                if (am.communicationDevice?.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO) routed = true
-                if (routed) return@repeat
+            for (i in 0 until 40) {
+                if (am.communicationDevice?.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO) {
+                    routed = true
+                    break
+                }
                 Thread.sleep(100)
             }
             Thread.sleep(1_000) // let the Bluetooth call audio link open

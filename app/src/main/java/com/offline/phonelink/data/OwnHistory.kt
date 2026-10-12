@@ -12,9 +12,10 @@ object OwnHistory {
 
     fun load(context: Context): List<HistoryEntry> {
         val json = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY, null) ?: return emptyList()
-        return runCatching {
-            val arr = JSONArray(json)
-            (0 until arr.length()).map { i ->
+        val arr = runCatching { JSONArray(json) }.getOrNull() ?: return emptyList()
+        // Skip a single corrupt record rather than dropping the whole saved history.
+        return (0 until arr.length()).mapNotNull { i ->
+            runCatching {
                 val o = arr.getJSONObject(i)
                 HistoryEntry(
                     number = o.getString("n"),
@@ -23,8 +24,8 @@ object OwnHistory {
                     time = o.getLong("t"),
                     durationSec = o.optLong("s"),
                 )
-            }
-        }.getOrDefault(emptyList())
+            }.getOrNull()
+        }
     }
 
     @Synchronized

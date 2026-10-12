@@ -35,10 +35,16 @@ object SystemCheck {
     /** Runs [command] as root (via su). Blocks: call it off the main thread. */
     fun root(command: String, timeoutSec: Long = 20): ShellResult = try {
         val p = ProcessBuilder("su", "-c", command).redirectErrorStream(true).start()
+        // Drain the output on its own thread: a command that prints more than the pipe buffer (~64 KB)
+        // would otherwise block writing while we wait, so waitFor would "time out" on a command that
+        // actually succeeded.
+        val out = StringBuilder()
+        val reader = Thread { runCatching { p.inputStream.bufferedReader().forEachLine { out.appendLine(it) } } }
+        reader.start()
         val finished = p.waitFor(timeoutSec, TimeUnit.SECONDS)
         if (!finished) p.destroyForcibly()
-        val out = p.inputStream.bufferedReader().readText().trim()
-        ShellResult(if (finished) p.exitValue() else -1, out)
+        reader.join(1_000)
+        ShellResult(if (finished) p.exitValue() else -1, out.toString().trim())
     } catch (t: Throwable) {
         ShellResult(-1, t.message ?: t.javaClass.simpleName)
     }

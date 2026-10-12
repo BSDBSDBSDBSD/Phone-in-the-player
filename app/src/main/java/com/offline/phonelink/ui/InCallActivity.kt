@@ -29,6 +29,8 @@ class InCallActivity : AppCompatActivity() {
     private val audio by lazy { getSystemService(AudioManager::class.java) }
     private var activeSince: Pair<Int, Long>? = null
     private var hadCall = false
+    /** When the screen opened: dialing is asynchronous, so wait briefly for the call to appear. */
+    private val openedAt = SystemClock.elapsedRealtime()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -66,6 +68,10 @@ class InCallActivity : AppCompatActivity() {
                 LinkState.state.collect { render(it) }
             }
         }
+        // If the screen was opened but no call ever arrives (e.g. the dial failed), close it once the
+        // grace window has passed. While a call is live, normal rendering governs when to finish.
+        b.root.postDelayed({ if (!hadCall && !LinkState.state.value.hasCall) finish() }, OPEN_GRACE_MS)
+
         // Call timer
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -85,12 +91,16 @@ class InCallActivity : AppCompatActivity() {
     private fun render(s: LinkSnapshot) {
         val call = s.mainCall
         if (call == null) {
-            if (hadCall) {
-                b.callState.setText(R.string.call_ended)
-                audio.isMicrophoneMute = false
-                b.root.postDelayed({ if (!LinkState.state.value.hasCall) finish() }, 1_200)
-            } else {
-                finish()
+            when {
+                hadCall -> {
+                    b.callState.setText(R.string.call_ended)
+                    audio.isMicrophoneMute = false
+                    b.root.postDelayed({ if (!LinkState.state.value.hasCall) finish() }, 1_200)
+                }
+                // Opened right after dialing: the call's state has not reached us yet. Hold the screen
+                // for a moment and show "dialing" rather than closing it the instant it appears.
+                SystemClock.elapsedRealtime() - openedAt < OPEN_GRACE_MS -> b.callState.setText(R.string.dialing)
+                else -> finish()
             }
             return
         }
@@ -146,5 +156,10 @@ class InCallActivity : AppCompatActivity() {
 
     private fun changeVolume(direction: Int) {
         audio.adjustStreamVolume(AudioManager.STREAM_VOICE_CALL, direction, AudioManager.FLAG_SHOW_UI)
+    }
+
+    private companion object {
+        /** How long a freshly-opened call screen waits for the call state before giving up. */
+        const val OPEN_GRACE_MS = 6_000L
     }
 }
