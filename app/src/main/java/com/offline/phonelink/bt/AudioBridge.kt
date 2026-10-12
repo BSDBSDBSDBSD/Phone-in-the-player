@@ -55,7 +55,7 @@ class AudioBridge(private val context: Context) {
     fun audioReturned() {
         if (!wanted) return
         worker.execute {
-            if (!running) return@execute
+            if (!running || nativeMode) return@execute
             val apk = context.applicationInfo.sourceDir
             val r = SystemCheck.root(
                 "CLASSPATH='$apk' app_process /system/bin com.offline.phonelink.root.AudioPolicyTool sco-on ${address ?: ""}",
@@ -120,7 +120,8 @@ class AudioBridge(private val context: Context) {
         running = false
         threads.forEach { runCatching { it.join(1_000) } }
         threads = emptyList()
-        address?.let { setScoDevices(it, available = false) }
+        // Only bridge mode told the policy a SCO headset was connected (via root); undo it only then.
+        if (!nativeMode) address?.let { setScoDevices(it, available = false) }
         runCatching { audio.clearCommunicationDevice() }
         @Suppress("DEPRECATION")
         runCatching { audio.isBluetoothScoOn = false }
