@@ -78,7 +78,26 @@ class AudioBridge(private val context: Context) {
         previousMode = audio.mode
         log("start for $phoneAddress (mode was $previousMode)")
         audio.mode = AudioManager.MODE_IN_COMMUNICATION
+        audio.isMicrophoneMute = false
+        // Canonical routing so Android carries the call over the Bluetooth SCO link in both directions:
+        // the player's mic becomes the SCO uplink to the phone, and the phone's voice comes in over SCO.
+        @Suppress("DEPRECATION")
+        runCatching { audio.startBluetoothSco() }
+        @Suppress("DEPRECATION")
+        runCatching { audio.isBluetoothScoOn = true }
         setScoDevices(phoneAddress, available = true)
+        runCatching {
+            val scoDev = audio.availableCommunicationDevices.firstOrNull { it.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO }
+            if (scoDev != null) log("setCommunicationDevice(sco) -> ${audio.setCommunicationDevice(scoDev)}")
+            else log("setCommunicationDevice: no SCO device")
+        }
+
+        if (nativeMode) {
+            // Native mode: the phone + audio HAL carry the whole call over SCO, like a real car kit
+            // (including the chip's own hardware echo cancellation). No software pumps.
+            log("native call-audio mode: no software pumps")
+            return
+        }
 
         val scoIn = waitForDevice(AudioManager.GET_DEVICES_INPUTS, AudioDeviceInfo.TYPE_BLUETOOTH_SCO)
         val scoOut = waitForDevice(AudioManager.GET_DEVICES_OUTPUTS, AudioDeviceInfo.TYPE_BLUETOOTH_SCO)
