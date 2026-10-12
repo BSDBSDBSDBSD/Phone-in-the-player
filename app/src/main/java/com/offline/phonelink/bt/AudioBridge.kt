@@ -171,15 +171,24 @@ class AudioBridge(private val context: Context) {
                 levelSum += level
                 levelBlocks++
                 if (farEnd) {
-                    // The other side is talking: remember it for the microphone direction.
-                    if (level > FAR_END_TALKING) farEndUntil = System.currentTimeMillis() + FAR_END_HOLD_MS
+                    // Remember how loud what we just played to the speaker is: that is the echo the
+                    // microphone will hear a moment later. Kept for ~250 ms to cover the acoustic delay.
+                    farLevel = level
+                    farLevelUntil = System.currentTimeMillis() + FAR_ECHO_HOLD_MS
                 } else {
-                    // Echo suppression: while the other side talks, the player's microphone mostly hears
-                    // the player's own speaker. Sending that back makes the other side hear itself and
-                    // can build up into a howl, so the microphone is turned down until they stop.
-                    val target = if (System.currentTimeMillis() < farEndUntil) SUPPRESSED_GAIN else 1f
+                    // Echo suppression by comparison, not by timing: the expected echo in the mic is
+                    // about COUPLING times the far level. If the mic is only as loud as that, it is
+                    // almost all echo, so duck it hard. If the mic is clearly louder, that extra is the
+                    // user talking, so let it through. This never cuts the user off when they are louder
+                    // than the echo, and stays fully open whenever the far side is silent.
+                    val far = if (System.currentTimeMillis() < farLevelUntil) farLevel else 0.0
+                    val expectedEcho = ECHO_COUPLING * far
+                    val target = when {
+                        level <= expectedEcho + 1 -> ECHO_FLOOR_GAIN
+                        else -> ((level - expectedEcho) / level).toFloat().coerceIn(ECHO_FLOOR_GAIN, 1f)
+                    }
                     gain = applyGain(buffer, n, gain, target)
-                    if (target < 1f) suppressed += n
+                    if (target < 0.95f) suppressed += n
                 }
                 track.write(buffer, 0, n)
                 frames += n
@@ -205,9 +214,11 @@ class AudioBridge(private val context: Context) {
         }
     }, "PhoneLink-$name")
 
-    /** Until when the other side counts as talking (for echo suppression). */
+    /** Recent level of what was last played to the speaker (the echo reference) and until when it holds. */
     @Volatile
-    private var farEndUntil = 0L
+    private var farLevel = 0.0
+    @Volatile
+    private var farLevelUntil = 0L
 
     private fun rms(buffer: ShortArray, n: Int): Double {
         var sum = 0.0
@@ -254,15 +265,12 @@ class AudioBridge(private val context: Context) {
         /** Bluetooth call audio here is narrow-band (CVSD, 8 kHz). */
         private const val SAMPLE_RATE = 8_000
 
-        /** Level (RMS) above which the other side counts as talking. */
-        private const val FAR_END_TALKING = 2000.0
-        /**
-         * How long the microphone stays down after the other side's last loud moment. Long enough to
-         * cover the speaker output's buffering, after which its echo still reaches the microphone.
-         */
-        private const val FAR_END_HOLD_MS = 150L
-        /** Microphone level while the other side talks. 1.0 = echo suppression OFF (diagnostic). */
-        private const val SUPPRESSED_GAIN = 1.0f
+        /** The echo in the mic is about this fraction of the level played to the speaker. */
+        private const val ECHO_COUPLING = 1.0
+        /** Lowest gain for the mic when it carries almost only echo (about -22 dB). */
+        private const val ECHO_FLOOR_GAIN = 0.08f
+        /** How long the far-end echo reference stays valid, covering the acoustic round trip. */
+        private const val FAR_ECHO_HOLD_MS = 250L
         private const val ROLE_INPUT = 1
         private const val ROLE_OUTPUT = 2
         private const val DEVICE_OUT_BLUETOOTH_SCO = 0x10
