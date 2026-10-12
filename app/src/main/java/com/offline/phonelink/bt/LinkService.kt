@@ -51,6 +51,7 @@ class LinkService : Service() {
     private var bridgeOffSince: Long? = null
     private var lastAudioOnPlayer = false
     private var audioMovedAway = false
+    private var scoRequested = false
     private var ringtone: Ringtone? = null
     private var shownIncomingId: Int? = null
 
@@ -264,6 +265,12 @@ class LinkService : Service() {
             checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) == android.content.pm.PackageManager.PERMISSION_GRANTED
         if (bridgeWanted) {
             bridgeOffSince = null
+            // Establish the Bluetooth call-audio (SCO) link once per call. Until now connectAudio ran
+            // only when the user tapped the audio button, so SCO was often never set up at all.
+            if (!s.audioOnPlayer && !scoRequested) {
+                scoRequested = true
+                phone()?.let { client.moveAudioToPlayer(it) }
+            }
             bridge.start(s.phoneAddress!!)
             // Re-send "BT_SCO=on" only when the sound really went to the phone and came back: sending it
             // while the path is running cut the microphone direction off.
@@ -278,6 +285,7 @@ class LinkService : Service() {
             if (now - since > 3_000) {
                 bridge.stop()
                 audioMovedAway = false
+                scoRequested = false
             }
         }
         lastAudioOnPlayer = s.audioOnPlayer

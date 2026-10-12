@@ -83,6 +83,8 @@ class DiagnosticsActivity : AppCompatActivity() {
         b.phoneAppLink.setOnClickListener { togglePhoneAppLink() }
         b.bridgeSwitch.isChecked = AudioBridge.isEnabled(this)
         b.bridgeSwitch.setOnCheckedChangeListener { _, on -> AudioBridge.setEnabled(this, on) }
+        b.nativeAudioSwitch.isChecked = AudioBridge.isNative(this)
+        b.nativeAudioSwitch.setOnCheckedChangeListener { _, on -> AudioBridge.setNative(this, on) }
         b.installSystem.setOnClickListener {
             confirm(R.string.install_system_confirm, R.string.install_system_go) {
                 runInstaller(R.string.install_done) { SystemInstaller.install(this) }

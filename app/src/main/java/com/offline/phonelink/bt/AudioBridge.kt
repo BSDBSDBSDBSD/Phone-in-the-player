@@ -37,6 +37,7 @@ class AudioBridge(private val context: Context) {
     /** What was last asked for (the worker may still be getting there). */
     @Volatile
     private var wanted = false
+    private var nativeMode = true
 
     fun start(phoneAddress: String) {
         if (wanted) return
@@ -73,6 +74,7 @@ class AudioBridge(private val context: Context) {
         if (running) return
         running = true
         address = phoneAddress
+        nativeMode = isNative(context)
         previousMode = audio.mode
         log("start for $phoneAddress (mode was $previousMode)")
         audio.mode = AudioManager.MODE_IN_COMMUNICATION
@@ -284,6 +286,21 @@ class AudioBridge(private val context: Context) {
 
         fun setEnabled(context: Context, enabled: Boolean) {
             context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean(KEY_ENABLED, enabled).apply()
+        }
+
+        private const val KEY_NATIVE = "call_audio_native"
+
+        /**
+         * true  = native mode: let the phone + audio HAL carry the whole call over SCO, like a real car
+         *         kit (includes the chip's own echo cancellation). No software pumps.
+         * false = bridge mode: PhoneLink moves the audio itself (two pumps + software echo suppression).
+         * Native is the default: it is the standard, least fragile path and gives hardware echo control.
+         */
+        fun isNative(context: Context): Boolean =
+            context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(KEY_NATIVE, true)
+
+        fun setNative(context: Context, native: Boolean) {
+            context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean(KEY_NATIVE, native).apply()
         }
     }
 }

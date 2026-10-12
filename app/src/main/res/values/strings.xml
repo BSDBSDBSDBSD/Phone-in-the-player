@@ -139,4 +139,5 @@
     <string name="service_probe_empty">הטלפון עדיין לא דיווח על השירותים שלו. נסה שוב בעוד כמה שניות.</string>
     <string name="service_yes">נתמך</string>
     <string name="service_no">לא נתמך</string>
+    <string name="native_audio_switch">מצב קול \"מערכת\" (מומלץ; הנגן כדיבורית רגילה עם ביטול הד חומרתי)</string>
 </resources>

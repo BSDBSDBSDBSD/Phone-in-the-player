@@ -60,6 +60,13 @@
                 android:text="@string/phone_app_link_off" />
 
             <com.google.android.material.materialswitch.MaterialSwitch
+                android:id="@+id/nativeAudioSwitch"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginVertical="4dp"
+                android:text="@string/native_audio_switch" />
+
+            <com.google.android.material.materialswitch.MaterialSwitch
                 android:id="@+id/bridgeSwitch"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
