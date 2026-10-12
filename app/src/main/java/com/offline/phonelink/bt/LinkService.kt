@@ -97,14 +97,7 @@ class LinkService : Service() {
         super.onCreate()
         current = this
         createChannels()
-        try {
-            ServiceCompat.startForeground(
-                this, NOTIF_LINK, linkNotification(LinkState.state.value),
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE or ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE,
-            )
-        } catch (t: Throwable) {
-            Log.w(TAG, "foreground start refused", t)
-        }
+        goForeground()
         bridge = AudioBridge(this)
         client = HfpClient(this) { refresh() }
         client.open()
@@ -129,6 +122,27 @@ class LinkService : Service() {
             }
         }
     }
+
+    /**
+     * Enters the foreground. The microphone type is claimed only once RECORD_AUDIO is granted: from
+     * Android 14 on, starting a microphone foreground service without that permission is refused and
+     * the start fails, so without the permission we run as a plain connected-device service and are
+     * promoted to the microphone type later, when the call audio bridge actually needs the mic.
+     */
+    private fun goForeground() {
+        var type = ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE
+        if (checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) ==
+            android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) type = type or ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
+        try {
+            ServiceCompat.startForeground(this, NOTIF_LINK, linkNotification(LinkState.state.value), type)
+            foregroundType = type
+        } catch (t: Throwable) {
+            Log.w(TAG, "foreground start refused", t)
+        }
+    }
+
+    private var foregroundType = 0
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
@@ -265,6 +279,9 @@ class LinkService : Service() {
             checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) == android.content.pm.PackageManager.PERMISSION_GRANTED
         if (bridgeWanted) {
             bridgeOffSince = null
+            // The bridge records the mic from this service, so make sure we are a microphone FGS now
+            // that RECORD_AUDIO is granted (we may have started as connected-device only before it was).
+            if (foregroundType and ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE == 0) goForeground()
             // Establish the Bluetooth call-audio (SCO) link once per call. Until now connectAudio ran
             // only when the user tapped the audio button, so SCO was often never set up at all.
             if (!s.audioOnPlayer && !scoRequested) {
