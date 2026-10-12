@@ -30,11 +30,20 @@ object LogCollector {
             echo "== log (bluetooth, calls, audio)"
             logcat -d -b main,system -v time | grep -iE 'bluetooth|bt_|bta_|hfp|headset|hf_client|sco|cvsd|AudioALSA|APM_|audio_hw|audiohal|AudioFlinger|AudioPolicy|primary|telecom|incall|dialer|phonelink|AndroidRuntime|FATAL|DEBUG' | tail -n 3000
             echo
+            echo "== MediaTek SCO path (BT CVSD RX/TX, mode)"
+            logcat -d -b main,system -v time | grep -iE 'BT_SCO|BTCVSD|bt_wbs|BT_SCO_RX|BT_SCO_TX|AudioALSAPlaybackHandlerBTSCO|AudioALSACaptureHandlerBTSCO|SetMode|IN_COMMUNICATION|IN_CALL|setAudioModeIsVoip|getIsVoipAudioMode' | tail -n 800
+            echo
+            echo "== PhoneLink mode watch"
+            logcat -d -b main -v time | grep -iE 'AudioBridge: (watch|mode)' | tail -n 60
+            echo
             echo "== bluetooth state"
             dumpsys bluetooth_manager | grep -iE -A30 'HeadsetClient|HfpClient' | head -n 200
             echo
             echo "== audio state"
-            dumpsys audio | grep -iE 'sco|bluetooth|mode|call|routing' | head -n 120
+            dumpsys audio | grep -iE 'sco|bluetooth|mode|call|routing|communication|device' | head -n 160
+            echo
+            echo "== audioflinger (threads, hal format, devices)"
+            dumpsys media.audio_flinger | grep -iE 'sco|bluetooth|mode|standby|AudioStreamOut|HAL format|sample rate|Output thread|Input thread|devices' | head -n 160
             echo
             echo "== telecom"
             dumpsys telecom | grep -iE 'PhoneAccount|hfp|bluetooth|Call ' | head -n 60

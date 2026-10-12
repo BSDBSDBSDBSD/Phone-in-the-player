@@ -79,6 +79,10 @@ class AudioBridge(private val context: Context) {
         log("start for $phoneAddress (mode was $previousMode)")
         audio.mode = AudioManager.MODE_IN_COMMUNICATION
         audio.isMicrophoneMute = false
+        // Diagnosis: on a player with no modem the whole call must stay in MODE_IN_COMMUNICATION (2).
+        // If something (e.g. the system's HFP-client telephony service) forces MODE_IN_CALL (3), the
+        // audio stack tries a local telephony path that does not exist here, and the call is silent.
+        log("mode after set: ${audio.mode} (2=communication, 3=in_call)")
         // Canonical routing so Android carries the call over the Bluetooth SCO link in both directions:
         // the player's mic becomes the SCO uplink to the phone, and the phone's voice comes in over SCO.
         @Suppress("DEPRECATION")
@@ -93,6 +97,8 @@ class AudioBridge(private val context: Context) {
             if (scoDev != null) log("setCommunicationDevice(sco) -> ${audio.setCommunicationDevice(scoDev)}")
             else log("setCommunicationDevice: no SCO device")
         }
+
+        startModeWatch()
 
         if (nativeMode) {
             // Native mode: the phone + audio HAL carry the whole call over SCO, like a real car kit
@@ -129,6 +135,25 @@ class AudioBridge(private val context: Context) {
         runCatching { audio.stopBluetoothSco() }
         audio.mode = previousMode
         log("stopped")
+    }
+
+    /**
+     * Diagnosis only: logs the call's audio mode and routing for the first seconds of the call, in
+     * both modes. Reads state, never changes it. Short-lived and stops as soon as the call ends. The
+     * log then shows whether the mode stayed at MODE_IN_COMMUNICATION and whether SCO really came up.
+     */
+    @Suppress("DEPRECATION")
+    private fun startModeWatch() {
+        Thread({
+            var i = 0
+            while (running && i < 8) {
+                val commDev = runCatching { audio.communicationDevice?.type }.getOrNull()
+                val scoOn = runCatching { audio.isBluetoothScoOn }.getOrNull()
+                log("watch: mode=${audio.mode} commDev=$commDev scoOn=$scoOn")
+                Thread.sleep(2_000)
+                i++
+            }
+        }, "PhoneLink-modewatch").apply { isDaemon = true }.start()
     }
 
     /** Copies sound from one device to another until [stop]. */
