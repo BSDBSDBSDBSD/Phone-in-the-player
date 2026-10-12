@@ -261,8 +261,8 @@ class AudioBridge(private val context: Context) {
          * cover the speaker output's buffering, after which its echo still reaches the microphone.
          */
         private const val FAR_END_HOLD_MS = 150L
-        /** Microphone level while the other side clearly talks (about -10 dB): dips, never cuts off. */
-        private const val SUPPRESSED_GAIN = 0.3f
+        /** Microphone level while the other side talks. 1.0 = echo suppression OFF (diagnostic). */
+        private const val SUPPRESSED_GAIN = 1.0f
         private const val ROLE_INPUT = 1
         private const val ROLE_OUTPUT = 2
         private const val DEVICE_OUT_BLUETOOTH_SCO = 0x10
