@@ -98,6 +98,11 @@ class AudioBridge(private val context: Context) {
         threads.forEach { runCatching { it.join(1_000) } }
         threads = emptyList()
         address?.let { setScoDevices(it, available = false) }
+        runCatching { audio.clearCommunicationDevice() }
+        @Suppress("DEPRECATION")
+        runCatching { audio.isBluetoothScoOn = false }
+        @Suppress("DEPRECATION")
+        runCatching { audio.stopBluetoothSco() }
         audio.mode = previousMode
         log("stopped")
     }
